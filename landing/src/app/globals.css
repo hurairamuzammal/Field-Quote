@@ -1,0 +1,152 @@
+:root {
+  --bg-color: #F6F7F6;
+  --text-color: #121514;
+  --accent-color: #b7ff00; /* lime greenish */
+  --accent-hover: #c9ff33;
+  --card-bg: #FFFFFF;
+  --border-color: #E2E6E3;
+  
+  --font-display: 'Outfit', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-marker: 'Permanent Marker', cursive;
+  
+  /* Fluid typography */
+  --text-hero: clamp(4rem, 10vw, 9rem);
+  --text-h1: clamp(3rem, 6vw, 6rem);
+  --text-h2: clamp(2.5rem, 5vw, 4.5rem);
+  --text-h3: clamp(1.8rem, 3vw, 2.5rem);
+  --text-large: clamp(1.2rem, 2vw, 1.5rem);
+  --text-base: 1.1rem;
+  --text-sm: 0.9rem;
+  
+  --space-sm: 1rem;
+  --space-md: 2rem;
+  --space-lg: 4rem;
+  --space-xl: 8rem;
+  --space-xxl: 12rem;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  cursor: none !important; /* Custom cursor override */
+}
+
+html, body {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-family: var(--font-body);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+  scroll-behavior: smooth;
+  scroll-snap-type: y mandatory;
+}
+
+/* Force sections to snap */
+.snap-section {
+  scroll-snap-align: start;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  html, body {
+    scroll-snap-type: none;
+  }
+  .snap-section {
+    scroll-snap-align: none;
+    min-height: auto;
+    padding: 6rem 0; /* Let content dictate height on mobile */
+  }
+  .hidden-mobile {
+    display: none !important;
+  }
+}
+
+::selection {
+  background: var(--accent-color);
+  color: #000;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: -0.03em;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.container {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 5vw;
+}
+
+/* Sections */
+.section {
+  padding: var(--space-xxl) 0;
+}
+
+.section-title {
+  font-size: var(--text-h2);
+  margin-bottom: var(--space-xl);
+  border-bottom: 2px solid var(--text-color);
+  padding-bottom: 1rem;
+}
+
+/* Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 2.5rem;
+  background-color: var(--accent-color);
+  color: #000;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.2rem;
+  border-radius: 100px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.3s ease;
+  will-change: transform;
+}
+
+.btn:hover {
+  background-color: var(--accent-hover);
+}
+
+.btn-outline {
+  background: transparent;
+  border: 2px solid var(--text-color);
+  color: var(--text-color);
+}
+
+.btn-outline:hover {
+  background: var(--text-color);
+  color: var(--bg-color);
+}
+
+/* Tags */
+.tag {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: 1px solid var(--border-color);
+  border-radius: 100px;
+  font-size: var(--text-sm);
+  text-transform: uppercase;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+/* Custom Cursor/Hover utilities can be added here if needed */
