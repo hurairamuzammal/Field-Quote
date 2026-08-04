@@ -117,7 +117,7 @@ export default function Hero() {
         <motion.a 
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          href="#app" 
+          href="https://fieldquote-26446.bubbleapps.io/version-13h94" 
           className="btn"
         >
           Start Quoting <ArrowRight style={{ marginLeft: '10px' }}/>
