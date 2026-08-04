@@ -1,62 +1,98 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Logo from '@/components/Logo';
 
 export default function Footer() {
   return (
     <footer style={{
-      background: 'var(--text-color)',
-      color: 'var(--bg-color)',
-      padding: 'var(--space-xxl) 0 var(--space-md) 0',
-      marginTop: 'var(--space-xl)',
+      background: 'var(--near-black)',
+      color: 'var(--text-light)',
+      paddingTop: 'var(--space-xl)',
       position: 'relative',
       overflow: 'hidden'
     }}>
       <div className="container">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4rem', flexWrap: 'wrap', gap: '2rem' }}>
-          <div>
-            <div style={{ fontSize: 'var(--text-large)', color: 'var(--accent-color)', marginBottom: '1rem' }}>READY TO START?</div>
-            <p style={{ fontSize: 'var(--text-base)', maxWidth: '400px', opacity: 0.8 }}>
-              Join the new standard in field service quoting. Clean, professional, and built for speed.
+        {/* Top row */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          flexWrap: 'wrap',
+          gap: 'var(--space-lg)',
+          marginBottom: 'var(--space-xl)'
+        }}>
+          <div style={{ maxWidth: '350px' }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <Logo color="var(--lime)" size={28} />
+            </div>
+            <p style={{ fontSize: 'var(--text-base)', opacity: 0.6, lineHeight: 1.6 }}>
+              Next-gen quoting for independent electrical teams. From first enquiry to paid invoice in minutes.
             </p>
           </div>
-          
-          <div style={{ display: 'flex', gap: '2rem' }}>
-            {['Twitter', 'LinkedIn', 'Email'].map(link => (
-              <motion.a 
-                key={link}
-                href="#"
-                whileHover={{ y: -5, color: 'var(--accent-color)' }}
-                style={{ fontSize: 'var(--text-large)', fontFamily: 'var(--font-display)', fontWeight: 600, textTransform: 'uppercase' }}
-              >
-                {link}
-              </motion.a>
-            ))}
+
+          <div style={{ display: 'flex', gap: 'var(--space-lg)', flexWrap: 'wrap' }}>
+            <div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-sm)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', opacity: 0.4 }}>Product</div>
+              {['Services', 'How It Works', 'FAQ'].map(link => (
+                <a key={link} href={`#${link.toLowerCase().replace(/\s/g, '-')}`} style={{ display: 'block', fontSize: 'var(--text-base)', opacity: 0.7, marginBottom: '0.6rem' }}>{link}</a>
+              ))}
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-sm)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', opacity: 0.4 }}>Company</div>
+              {['About', 'Team', 'Contact'].map(link => (
+                <a key={link} href={`#${link.toLowerCase()}`} style={{ display: 'block', fontSize: 'var(--text-base)', opacity: 0.7, marginBottom: '0.6rem' }}>{link}</a>
+              ))}
+            </div>
+            <div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-sm)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', opacity: 0.4 }}>Social</div>
+              {['Twitter', 'LinkedIn', 'Email'].map(link => (
+                <motion.a
+                  key={link}
+                  href="#"
+                  whileHover={{ color: 'var(--lime)', x: 4 }}
+                  style={{ display: 'block', fontSize: 'var(--text-base)', opacity: 0.7, marginBottom: '0.6rem', transition: 'color 0.2s' }}
+                >
+                  {link}
+                </motion.a>
+              ))}
+            </div>
           </div>
         </div>
 
+        {/* Giant branding */}
         <motion.div
-          initial={{ opacity: 0, y: 50 }}
+          initial={{ opacity: 0, y: 40 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 1 }}
+          transition={{ duration: 0.8 }}
           style={{
-            fontSize: 'min(11vw, 200px)',
+            fontSize: 'clamp(3rem, 10vw, 10rem)',
             fontFamily: 'var(--font-display)',
             fontWeight: 800,
-            lineHeight: 0.8,
+            lineHeight: 0.85,
             letterSpacing: '-0.04em',
             textAlign: 'center',
-            color: 'var(--accent-color)',
-            marginBottom: '4rem',
-            width: '100%',
-            overflow: 'hidden'
+            color: 'var(--lime)',
+            padding: 'var(--space-lg) 0',
+            opacity: 0.15,
+            userSelect: 'none'
           }}
         >
           FIELDQUOTE.
         </motion.div>
 
-        <div style={{ display: 'flex', justifyContent: 'space-between', opacity: 0.5, fontSize: 'var(--text-sm)', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '2rem' }}>
+        {/* Copyright */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '1rem',
+          opacity: 0.35,
+          fontSize: 'var(--text-sm)',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          padding: '1.5rem 0'
+        }}>
           <span>© 2026 FieldQuote. All rights reserved.</span>
           <span>Designed with precision.</span>
         </div>
