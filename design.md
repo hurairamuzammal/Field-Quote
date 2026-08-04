@@ -2,79 +2,38 @@
 
 ## Purpose
 
-FieldQuote is the operations workflow for independent electricians and small electrical-service teams. The landing page should make one practical promise: a customer enquiry can move cleanly from first description to reviewed quote, deposit, scheduled visit, and completed electrical work.
-
-The site is not a generic AI-product landing page. It should feel like a reliable, well-organised electrical contractor: experienced, calm, clear on the details, and ready to work.
-
-## Audience and positioning
-
-- Primary audience: electrical contractors, owners, office managers, and supervisors running small field teams.
-- Core work: electrical installations, fault finding, consumer-unit upgrades, EICR testing, emergency call-outs, lighting, rewires, and EV-charger work.
-- Customer promise: faster response and professional, transparent quotes.
-- Team promise: fewer missed details, less chasing, and a single trusted place to run jobs.
+FieldQuote is the operations workflow for independent electricians and small electrical-service teams. The landing page demonstrates that a customer enquiry can move cleanly from first description to reviewed quote, deposit, scheduled visit, and completed electrical work.
 
 ## Visual system
 
 ### Mood
-
-Warm, practical, organised, and human. Avoid a cold enterprise dashboard, a black-and-purple AI aesthetic, generic gradients, stock glass panels, and overly decorative animations.
+Minimal, hyper-modern, fluid, and confident. The aesthetic draws inspiration from high-end digital agencies (like Obys) but applies it to practical field service tools.
 
 ### Colour
-
-- `Pine #1D413B`: trust, operational focus, major dark sections.
-- `Warm cream #F7F4ED`: the primary background; softer than stark white.
-- `Paper #FFFEFB`: readable card and page surfaces.
-- `Signal orange #EF6E3B`: calls to action, priority cues, and emphasis.
-- `Amber #F4B64C`: electrical-energy accent, used sparingly in illustrations and AI states.
-- `Slate #68736E`: supporting copy.
-
-Orange communicates action; it is not a decorative wash. Large dark-green surfaces balance it and keep the product grounded.
+- `Lime Green #b7ff00`: The primary accent color for calls to action, highlights, and energy. It provides a striking, high-contrast pop.
+- `Off-White #F6F7F6`: The primary background color. Soft and clean, ensuring the high-contrast elements stand out.
+- `Deep Slate #121514`: Used for text, major dark components, and inverted elements. It provides a severe, premium contrast against the off-white and lime green.
 
 ### Typography
+- **Display (Headings)**: `Outfit` (or similar clean geometric sans-serif) used at massive, fluid sizes (up to `9rem` or `12vw`). Headings should be bold, tightly tracked, and commanding.
+- **Interface/Body**: `Inter` for clean, dense product information and paragraph readability.
 
-- Display: Georgia-style editorial serif for high-value promises and section headings. It adds confidence and a considered, professional voice.
-- Interface/body: a clean system sans-serif for clarity in dense product information.
-- Headings use tight tracking and short lines. Body copy is plain English and never uses hype to hide a vague claim.
-
-### Brand mark
-
-The supplied mark has substantial transparent padding. The site uses a cropped presentation wrapper so the electric symbol is visibly substantial in the header and footer rather than appearing as a tiny icon. The wordmark stays as text for a crisp, accessible treatment until a final FieldQuote-specific logo asset is supplied.
+### Motion and interaction
+- **Super Fluid**: Use `framer-motion` for buttery smooth easings (`cubic-bezier(0.16, 1, 0.3, 1)`).
+- **Magnetic/Lift Hovers**: Buttons and cards should have subtle magnetic pulls or lift-and-invert states when hovered.
+- **Live Scrolling**: Continuous marquee text to communicate energy and volume of services.
+- **Scroll Reveals**: Components should smoothly fade and slide up as they enter the viewport.
+- **Glassmorphism**: Floating headers or panels use `backdrop-blur` to maintain depth over scrolling content.
 
 ## Page structure
 
-1. Header: concise product navigation plus a direct workspace link.
-2. Hero: clear electrical-service promise and a dashboard preview.
-3. Trades strip: electrical installation, fault finding, consumer units, EICR, and EV charging.
-4. Workflow: request → AI-assisted quote draft → deposit → completed job.
-5. AI proof: explicit guardrails—price-book grounding and human approval, not autonomous pricing.
-6. Results: useful operational outcomes, without invented statistics.
-7. Reviews: illustrative early-access examples, visibly labelled until verified testimonials exist.
-8. FAQ: address the questions likely to prevent adoption—CRM fit, AI safety, mobile use, and payments.
-9. Final call to action and practical footer links.
-
-## Product visuals
-
-Until the Bubble product has real screens worth showing, the page uses custom, code-built product previews. Their content must reflect genuine product behaviour and electrical work (for example, a consumer-unit inspection or EV-charger survey), not invented capabilities. Replace them with authenticated screenshots once the relevant Bubble flows are stable.
-
-## Motion and interaction
-
-- Soft hover lift on buttons only.
-- Anchor navigation scrolls smoothly.
-- No autoplay video, parallax, carousels, or large animation libraries.
-- FAQ disclosure uses native `<details>` for keyboard and screen-reader support.
-- Motion should support orientation, not compete with the work.
-
-## Accessibility and performance
-
-- All non-decorative images require useful alt text; decorative marks have empty alt text.
-- Keep orange-on-cream and body text contrast legible.
-- Use semantic sections, headings in order, visible focus states supplied by the browser, and real links/buttons.
-- Keep the landing page mostly server-rendered and dependency-free for a fast Vercel deployment.
-- Metadata must describe FieldQuote as an electrical-service quoting and job workflow.
-
-## Content rules
-
-- Never imply the AI sends a quote or chooses a price alone.
-- Never claim a numeric business result unless it is verified.
-- Do not call the placeholder feedback “customer reviews”; label it illustrative until approval is received.
-- Link the public and admin actions to the supplied Bubble URLs until custom domains are available.
+1. **Floating Header**: Sticky glassmorphic nav with "Sign Up" and "Book an Appointment".
+2. **Hero**: Huge typography statement.
+3. **Marquee**: Live scrolling text of electrical services.
+4. **Stats/Numbers**: Animated counting statistics (e.g., customers served).
+5. **Services**: Animated cards for Consumer Units, EICR, EV Chargers, Fault Finding.
+6. **Workflow Tabs**: Process steps (AI Draft → Review → Deposit → Done).
+7. **Team/Careers**: Showcasing 250+ trained staff and career opportunities.
+8. **Reviews**: Social-media style testimonial cards with profile avatars and star ratings.
+9. **Contact/HQ**: Headquarters details, emails, and certifications.
+10. **Footer**: Massive typography closer.

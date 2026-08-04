@@ -4,7 +4,7 @@ This is the running backend handover. Update the newest entry first after every 
 
 ## Current position
 
-**Phase:** Week 1, Day 1 complete — schema and electrician price-book foundation. Next: Day 2 RLS policies and negative tests.
+**Phase:** Week 1, Day 2 — RLS applied; one hosted Auth setting remains before Bubble integration.
 
 **Linked Supabase project:** `fieldquote` (`chqljfdmgdtsmbbwbdyv`).
 
@@ -26,6 +26,21 @@ This is the running backend handover. Update the newest entry first after every 
 - The only warning concerned an optional local Docker catalog cache. The remote migration and remote seed both completed.
 - Current remote foundation: 16 RLS-enabled domain tables, company settings, and 28 electrician price-book items. No fake technician was inserted because technicians must have genuine Supabase Auth identities.
 
+### 2026-07-29 — Iteration 3: RLS and profile lifecycle staged
+
+- Added the Day-2 RLS migration for admin, technician, and anonymous waitlist access.
+- Added a 1:1 Auth-user → profile trigger. Future users get a profile automatically; server-side provisioning may choose admin or technician, and the default is technician.
+- Prepared backfill for the two existing real Auth users: `admin@example.com` as admin and `huraira.muzammel@gmail.com` as technician.
+- Added a database guard preventing technicians from changing assignment, scheduling, quote, duration, company, or other protected job fields.
+- Added the RLS negative-test script. It requires a privileged database connection and the technician UUID when run.
+
+### 2026-07-29 — Iteration 4: RLS applied and profiles verified
+
+- Applied `20260729124500_rls_profiles_and_auth.sql` successfully to the linked remote Supabase project.
+- Verified the 1:1 backfill remotely: `admin@example.com` is active with the `admin` role; `huraira.muzammel@gmail.com` is active with the `technician` role.
+- Updated the committed local Supabase config to disable email/public signup for local development.
+- Remote hosted Auth still needs **Authentication → Settings → Allow new users to sign up = off**. This requires a Supabase dashboard action or a Management API personal access token; neither is available through the linked CLI. Password recovery remains available for existing users after sign-up is disabled.
+
 ## Complete
 
 - [x] Supabase project initialized and linked.
@@ -34,16 +49,19 @@ This is the running backend handover. Update the newest entry first after every 
 - [x] All domain tables have RLS enabled from creation.
 - [x] Migration pushed to remote Supabase.
 - [x] Electrician company settings and 28-item price book seeded remotely.
+- [x] RLS/profile migration pushed to remote Supabase.
+- [x] Existing admin and technician profiles backfilled and verified remotely.
+- [ ] RLS negative test run with the technician UUID.
+- [ ] Hosted Supabase Auth public sign-up disabled.
 
 ## Next up — in order
 
-1. Install/use the Supabase CLI and run `supabase db push` against the linked project.
-2. Inspect the remote tables and run the seed in the target environment.
-3. Add Day-2 RLS policies and negative tests—admin full access; technicians limited to their jobs; anon limited to waitlist insertion.
-4. Configure Supabase Auth: disable public signup, seed the admin safely, then prove Bubble login/refresh and role routing.
-5. Add the Bubble API Connector with the anon key and dynamic JWT `Authorization` header.
-6. Build technician invitation as an edge function; create real technician auth users and matching profiles.
-7. Configure R2 presigned uploads and the realtime bridge before public intake work.
+1. Disable public sign-up in hosted Supabase Auth; only the future admin-gated invite function may create staff users.
+2. Run the RLS negative suite with Huraira's technician UUID.
+3. Configure Bubble Auth/API Connector: anon key plus dynamic JWT `Authorization` header.
+4. Prove login, password recovery, silent token refresh, and role routing in Bubble.
+5. Build the admin-gated technician invitation edge function.
+6. Configure R2 presigned uploads and the realtime bridge before public intake work.
 
 ## Guardrails to re-check on every backend change
 
