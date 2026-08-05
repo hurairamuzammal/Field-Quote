@@ -1,119 +1,103 @@
 'use client';
 
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
+import { useState } from 'react';
+import Logo from '@/components/Logo';
+
+const navLinks = [
+  { label: 'Services', href: '#services' },
+  { label: 'About', href: '#about' },
+  { label: 'FAQ', href: '#faq' },
+  { label: 'Contact', href: '#contact' },
+];
 
 export default function Header() {
   const { scrollY } = useScroll();
-  const y = useTransform(scrollY, [0, 50], [0, 10]);
+  const [scrolled, setScrolled] = useState(false);
+
+  useMotionValueEvent(scrollY, 'change', (latest) => {
+    setScrolled(latest > 50);
+  });
 
   return (
     <motion.header
+      initial={{ y: -100, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
       style={{
-        y,
         position: 'fixed',
-        top: '20px',
+        top: scrolled ? '16px' : '0',
         left: 0,
         right: 0,
         margin: '0 auto',
-        width: '90%',
-        maxWidth: '1000px',
-        padding: '12px 24px',
+        width: scrolled ? 'min(92%, 1000px)' : '100%',
+        padding: scrolled ? '10px 10px 10px 24px' : '20px clamp(1.5rem, 5vw, 4rem)',
         zIndex: 100,
-        background: 'rgba(246, 247, 246, 0.7)',
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
-        border: '1px solid rgba(0,0,0,0.05)',
-        borderRadius: '100px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.08)'
+        background: scrolled ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(24px) saturate(200%)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'blur(24px) saturate(200%)' : 'none',
+        border: scrolled ? '1px solid rgba(255,255,255,0.5)' : '1px solid transparent',
+        borderRadius: scrolled ? 'var(--radius-pill)' : '0',
+        boxShadow: scrolled ? '0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 0 0 1px rgba(255,255,255,0.3)' : 'none',
+        transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '8px'
       }}
     >
-      <div className="container" style={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: '12px'
-      }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontWeight: 800, fontSize: '1.2rem', letterSpacing: '-0.02em', color: 'var(--text-color)' }}>
-          FIELDQUOTE.
-        </div>
-        
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <motion.a 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            href="#about" 
+      {/* Logo */}
+      <a href="#" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center' }}>
+        <Logo color="var(--text-dark)" size={22} />
+      </a>
+
+      {/* Nav Links — hide on mobile */}
+      <nav className="hide-mobile" style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+        {navLinks.map((link) => (
+          <motion.a
+            key={link.label}
+            href={link.href}
+            whileHover={{ backgroundColor: 'rgba(0,0,0,0.05)' }}
             style={{
-              padding: '10px 16px',
+              padding: '8px 14px',
               fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              color: 'var(--text-color)',
+              fontWeight: 600,
+              fontSize: '0.82rem',
+              color: 'var(--text-dark)',
               textTransform: 'uppercase',
-              cursor: 'pointer',
-              textDecoration: 'none'
+              letterSpacing: '0.04em',
+              borderRadius: 'var(--radius-pill)',
+              textDecoration: 'none',
+              transition: 'background 0.2s'
             }}
           >
-            About
+            {link.label}
           </motion.a>
-          
-          <motion.a 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            href="#staff" 
-            style={{
-              padding: '10px 16px',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              color: 'var(--text-color)',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              textDecoration: 'none'
-            }}
-          >
-            Staff
-          </motion.a>
-          
-          <motion.a 
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            href="#contact" 
-            style={{
-              padding: '10px 16px',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              fontSize: '0.85rem',
-              color: 'var(--text-color)',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              textDecoration: 'none'
-            }}
-          >
-            Contact
-          </motion.a>
-          
-          <motion.a  
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            href="https://fieldquote-26446.bubbleapps.io/version-13h94/login" 
-            style={{
-              padding: '10px 24px',
-              background: 'var(--accent-color)',
-              color: '#000',
-              fontFamily: 'var(--font-display)',
-              fontWeight: 700,
-              fontSize: '0.9rem',
-              borderRadius: '100px',
-              textTransform: 'uppercase',
-              cursor: 'pointer',
-              border: 'none',
-              textDecoration: 'none'
-            }}
-          >
-            Login
-          </motion.a>
-        </div>
+        ))}
+      </nav>
+
+      {/* CTA Buttons */}
+      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+        <motion.a
+          whileHover={{ scale: 1.03, boxShadow: '0 6px 24px rgba(0,224,196,0.3)' }}
+          whileTap={{ scale: 0.97 }}
+          href="https://fieldquote-26446.bubbleapps.io/version-13h94/login"
+          style={{
+            padding: '10px 22px',
+            background: 'var(--lime)',
+            color: '#000',
+            fontFamily: 'var(--font-display)',
+            fontWeight: 700,
+            fontSize: '0.85rem',
+            borderRadius: 'var(--radius-pill)',
+            textTransform: 'uppercase',
+            letterSpacing: '0.03em',
+            textDecoration: 'none',
+            whiteSpace: 'nowrap'
+          }}
+        >
+          Login
+        </motion.a>
       </div>
     </motion.header>
   );

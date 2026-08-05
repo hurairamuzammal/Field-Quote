@@ -7,126 +7,125 @@ import { useState, useEffect } from 'react';
 const words = ['Clarity', 'Trust', 'Power', 'Speed'];
 
 export default function Hero() {
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [currentText, setCurrentText] = useState('');
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [wordIndex, setWordIndex] = useState(0);
+  const [text, setText] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    const typeSpeed = isDeleting ? 60 : 100;
-    const word = words[currentWordIndex];
+    const word = words[wordIndex];
+    const speed = deleting ? 50 : 90;
 
     const timer = setTimeout(() => {
-      if (!isDeleting && currentText === word) {
-        setTimeout(() => setIsDeleting(true), 2000);
-      } else if (isDeleting && currentText === '') {
-        setIsDeleting(false);
-        setCurrentWordIndex((prev) => (prev + 1) % words.length);
+      if (!deleting && text === word) {
+        setTimeout(() => setDeleting(true), 1800);
+      } else if (deleting && text === '') {
+        setDeleting(false);
+        setWordIndex((prev) => (prev + 1) % words.length);
       } else {
-        setCurrentText((prev) => 
-          isDeleting ? prev.slice(0, -1) : word.slice(0, prev.length + 1)
-        );
+        setText(deleting ? text.slice(0, -1) : word.slice(0, text.length + 1));
       }
-    }, typeSpeed);
+    }, speed);
 
     return () => clearTimeout(timer);
-  }, [currentText, isDeleting, currentWordIndex]);
+  }, [text, deleting, wordIndex]);
+
   return (
-    <section className="container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: '120px' }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-        <motion.div 
+    <section className="container" style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', justifyContent: 'center', paddingTop: '120px', paddingBottom: '60px' }}>
+      {/* Top bar */}
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 'var(--space-md)' }}>
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.6 }}
           className="tag"
         >
-          Electrical Service Quotes
-        </motion.div>
-        
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          style={{ maxWidth: '300px', fontSize: 'var(--text-base)', color: '#68736E' }}
-        >
-          We bring high-end operational flow to independent electrical teams. Professional quotes, faster response.
+          AI-Powered Quoting
         </motion.div>
       </div>
 
-      <motion.div 
-        style={{ fontSize: 'var(--text-hero)', maxWidth: '1200px', marginBottom: '3rem', lineHeight: 1 }}
-      >
-        <div style={{ display: 'flex', overflow: 'hidden' }}>
-          {"OPERATE".split('').map((char, i) => (
-            <motion.span
-              key={i}
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              transition={{ duration: 0.8, delay: i * 0.05, ease: [0.16, 1, 0.3, 1] }}
-            >
-              {char}
-            </motion.span>
-          ))}
-          <motion.span
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.5, delay: 0.5, type: 'spring' }}
-            style={{ marginLeft: '1rem' }}
-          >
-            ⚡️
-          </motion.span>
-        </div>
-        
-        <div style={{ display: 'flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
-          <motion.span
-            initial={{ y: "100%" }}
-            animate={{ y: 0 }}
-            transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            style={{ marginRight: '2rem' }}
-          >
-            WITH
-          </motion.span>
-          <motion.span 
-            initial={{ y: "100%", opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.8, delay: 0.6, ease: [0.16, 1, 0.3, 1] }}
-            style={{ 
-              color: 'var(--accent-color)', 
-              fontFamily: 'var(--font-marker)', 
-              textShadow: '0 0 40px rgba(183,255,0,0.3)', 
-              fontWeight: 400, 
-              textTransform: 'none',
-              display: 'inline-block'
-            }}
-          >
-            {currentText}
-            <motion.span
-              animate={{ opacity: [0, 1, 0] }}
-              transition={{ repeat: Infinity, duration: 0.8 }}
-              style={{ display: 'inline-block', width: '4px', height: '1em', background: 'var(--accent-color)', marginLeft: '4px', verticalAlign: 'middle' }}
-            />
-          </motion.span>
-        </div>
-      </motion.div>
 
-      <motion.div 
+
+      {/* Giant headline — fixed dimensions prevent typewriter reflow */}
+      <div style={{ fontSize: 'var(--text-hero)', lineHeight: 1, marginBottom: 'var(--space-md)', overflow: 'hidden', textAlign: 'center' }}>
+        <div style={{ overflow: 'hidden' }}>
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+          >
+            OPERATE ⚡
+          </motion.div>
+        </div>
+
+        <div style={{ overflow: 'hidden', height: '1.1em' }}>
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            transition={{ duration: 0.9, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+          >
+            <span>WITH </span>
+            <span style={{
+              color: 'var(--lime)',
+              fontFamily: 'var(--font-marker)',
+              fontWeight: 400,
+              textTransform: 'none',
+              textShadow: '0 0 60px rgba(0,224,196,0.3)'
+            }}>
+              {text}
+            </span>
+            <motion.span
+              animate={{ opacity: [1, 0] }}
+              transition={{ repeat: Infinity, duration: 0.6, ease: 'easeInOut' }}
+              style={{
+                display: 'inline-block',
+                width: '4px',
+                height: '0.7em',
+                background: 'var(--lime)',
+                marginLeft: '3px',
+                borderRadius: '2px',
+                verticalAlign: 'baseline'
+              }}
+            />
+          </motion.div>
+        </div>
+      </div>
+
+      <motion.p
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.3 }}
+        style={{ 
+          fontSize: 'var(--text-large)', 
+          color: '#68736E', 
+          textAlign: 'center',
+          maxWidth: '600px',
+          margin: '0 auto var(--space-lg)'
+        }}
+      >
+        From first enquiry to paid invoice — streamlined for independent electrical teams.
+      </motion.p>
+
+      {/* CTAs */}
+      <motion.div
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
-        style={{ display: 'flex', gap: '1rem' }}
+        transition={{ duration: 0.8, delay: 0.4 }}
+        style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}
       >
-        <motion.a 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          href="https://fieldquote-26446.bubbleapps.io/version-13h94" 
-          className="btn"
+        <motion.a
+          whileHover={{ scale: 1.04, boxShadow: '0 12px 40px rgba(0,224,196,0.35)' }}
+          whileTap={{ scale: 0.97 }}
+          href="https://fieldquote-26446.bubbleapps.io/version-13h94"
+          className="btn btn-primary"
+          style={{ fontSize: '1.1rem', padding: '1.1rem 2.8rem' }}
         >
-          Start Quoting <ArrowRight style={{ marginLeft: '10px' }}/>
+          Start Quoting <ArrowRight size={20} />
         </motion.a>
-        <motion.a 
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          href="#docs" 
-          className="btn btn-outline"
+        <motion.a
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.97 }}
+          href="#how-it-works"
+          className="btn btn-outline-dark"
         >
           How It Works
         </motion.a>

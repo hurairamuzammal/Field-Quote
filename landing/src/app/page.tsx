@@ -2,47 +2,61 @@ import Hero from '@/components/Hero';
 import Marquee from '@/components/Marquee';
 import Services from '@/components/Services';
 import Sequence from '@/components/Sequence';
-import About from '@/components/About';
 import Stats from '@/components/Stats';
+import About from '@/components/About';
+import Quality from '@/components/Quality';
 import Team from '@/components/Team';
-import Contact from '@/components/Contact';
 import Reviews from '@/components/Reviews';
+import FAQ from '@/components/FAQ';
+import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
+import Gallery from '@/components/Gallery';
+import Showcase from '@/components/Showcase';
 
 export default function Home() {
   return (
     <main>
-      {/* SECTION 1: Cream/White BG */}
-      <section className="snap-section" style={{ background: 'var(--bg-color)', color: 'var(--text-color)' }}>
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <Hero />
-        </div>
-        <Marquee />
-      </section>
+      {/* 1. Hero — Cream */}
+      <Hero />
 
-      {/* SECTION 2: Lime Green BG */}
-      <section className="snap-section" style={{ background: 'var(--accent-color)', color: '#121514' }}>
-        <Team />
-        <Stats />
-      </section>
+      {/* 2. Marquee — Cream border */}
+      <Marquee />
 
-      {/* SECTION 3: Deep Slate/Black BG */}
-      <section className="snap-section" style={{ background: '#121514', color: '#F6F7F6' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', padding: '4rem 0' }}>
-          <Services />
-          <Sequence />
-        </div>
-      </section>
+      {/* 3. Services — Dark green */}
+      <Services />
 
-      {/* SECTION 4: Cream/White BG */}
-      <section className="snap-section" style={{ background: 'var(--bg-color)', color: 'var(--text-color)', justifyContent: 'space-between' }}>
-        <div style={{ paddingTop: '8rem' }}>
-          <About />
-          <Reviews />
-          <Contact />
-        </div>
-        <Footer />
-      </section>
+      {/* 4. Gallery — Cream */}
+      <Gallery />
+
+      {/* 5. Showcase — Dark green */}
+      <Showcase />
+
+      {/* 6. How It Works — Cream */}
+      <Sequence />
+
+      {/* 7. Stats — Gradient */}
+      <Stats />
+
+      {/* 8. About / The Standard — Cream */}
+      <About />
+
+      {/* 8.5 Quality & Pricing — Cream */}
+      <Quality />
+
+      {/* 9. Team — Dark green */}
+      <Team />
+
+      {/* 8. Reviews — Cream */}
+      <Reviews />
+
+      {/* 9. FAQ — Dark green */}
+      <FAQ />
+
+      {/* 10. Contact — Cream */}
+      <Contact />
+
+      {/* 11. Footer — Near-black */}
+      <Footer />
     </main>
   );
 }
