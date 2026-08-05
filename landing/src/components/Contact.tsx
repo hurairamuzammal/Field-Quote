@@ -5,7 +5,7 @@ import { MapPin, Mail, Award, Send } from 'lucide-react';
 
 export default function Contact() {
   return (
-    <section id="contact" className="section-pad-lg" style={{ background: 'var(--cream)' }}>
+    <section id="contact" className="section-pad-lg" style={{ background: 'var(--cream)', paddingBottom: 0 }}>
       <div className="container">
         <div style={{
           background: 'var(--lime)',
@@ -26,7 +26,7 @@ export default function Contact() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5 }}
-              style={{ padding: '2.5rem 1.5rem', borderRadius: 'var(--radius-lg)', background: '#fff', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}
+              style={{ padding: '2.5rem 1.5rem', borderRadius: 'var(--radius-lg)', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px) saturate(180%)', WebkitBackdropFilter: 'blur(24px) saturate(180%)', border: '1px solid rgba(255,255,255,0.8)', textAlign: 'center', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 0 0 1px rgba(255,255,255,0.3)' }}
             >
               <MapPin size={32} strokeWidth={2} style={{ margin: '0 auto 1.2rem', color: 'var(--dark-green)' }} />
               <h3 style={{ fontSize: 'var(--text-large)', fontWeight: 800, marginBottom: '0.8rem', color: 'var(--dark-green)' }}>Headquarters</h3>
@@ -42,7 +42,7 @@ export default function Contact() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              style={{ padding: '2.5rem 1.5rem', borderRadius: 'var(--radius-lg)', background: '#fff', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}
+              style={{ padding: '2.5rem 1.5rem', borderRadius: 'var(--radius-lg)', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px) saturate(180%)', WebkitBackdropFilter: 'blur(24px) saturate(180%)', border: '1px solid rgba(255,255,255,0.8)', textAlign: 'center', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 0 0 1px rgba(255,255,255,0.3)' }}
             >
               <Mail size={32} strokeWidth={2} style={{ margin: '0 auto 1.2rem', color: 'var(--dark-green)' }} />
               <h3 style={{ fontSize: 'var(--text-large)', fontWeight: 800, marginBottom: '0.8rem', color: 'var(--dark-green)' }}>Email Us</h3>
@@ -57,7 +57,7 @@ export default function Contact() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.5, delay: 0.2 }}
-              style={{ padding: '2.5rem 1.5rem', borderRadius: 'var(--radius-lg)', background: '#fff', textAlign: 'center', boxShadow: '0 10px 30px rgba(0,0,0,0.05)' }}
+              style={{ padding: '2.5rem 1.5rem', borderRadius: 'var(--radius-lg)', background: 'rgba(255, 255, 255, 0.75)', backdropFilter: 'blur(24px) saturate(180%)', WebkitBackdropFilter: 'blur(24px) saturate(180%)', border: '1px solid rgba(255,255,255,0.8)', textAlign: 'center', boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 0 0 1px rgba(255,255,255,0.3)' }}
             >
               <Award size={32} strokeWidth={2} style={{ margin: '0 auto 1.2rem', color: 'var(--dark-green)' }} />
               <h3 style={{ fontSize: 'var(--text-large)', fontWeight: 800, marginBottom: '0.8rem', color: 'var(--dark-green)' }}>Certified By</h3>
@@ -69,27 +69,30 @@ export default function Contact() {
             </motion.div>
           </div>
         </div>
+      </div>
 
-        {/* Email CTA */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          style={{
-            background: 'var(--dark-green)',
-            borderRadius: 'var(--radius-lg)',
-            padding: 'var(--space-lg)',
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: 'var(--space-md)',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            width: '85%',
-            maxWidth: '1200px',
-            margin: '0 auto'
-          }}
-        >
+      {/* Email CTA */}
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.6 }}
+        style={{
+          background: 'var(--dark-green)',
+          padding: '4rem 0',
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'center'
+        }}
+      >
+        <div className="container" style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 'var(--space-md)',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          width: '100%'
+        }}>
           <div>
             <h3 style={{ fontSize: 'var(--text-h3)', color: 'var(--text-light)', marginBottom: '0.5rem' }}>HAVE A QUESTION?</h3>
             <p style={{ fontSize: 'var(--text-base)', color: 'rgba(255,255,255,0.6)' }}>Drop your email and we&apos;ll get back within 24 hours.</p>
@@ -131,7 +134,12 @@ export default function Contact() {
               <Send size={16} /> Send
             </motion.button>
           </div>
-        </motion.div>
+        </div>
+      </motion.div>
+
+      {/* 60% Centered Separator */}
+      <div style={{ background: 'var(--dark-green)', width: '100%', display: 'flex', justifyContent: 'center' }}>
+        <div style={{ width: '60%', height: '1px', background: 'rgba(255,255,255,0.15)' }} />
       </div>
     </section>
   );

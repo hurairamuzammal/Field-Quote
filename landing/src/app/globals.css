@@ -112,6 +112,39 @@ a {
   opacity: 0.6;
 }
 
+.section-heading.centered {
+  margin: 0 auto 3rem;
+}
+
+/* Torch / Spotlight Hover Effect */
+.glow-card {
+  position: relative;
+}
+
+.glow-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 2px; /* Border thickness */
+  background: radial-gradient(
+    600px circle at var(--mouse-x, -9999px) var(--mouse-y, -9999px),
+    rgba(255, 255, 255, 0.9),
+    transparent 40%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.glow-wrapper:hover .glow-card::after {
+  opacity: 1;
+}
+
 .section-heading {
   font-size: var(--text-h2);
   margin-bottom: var(--space-lg);

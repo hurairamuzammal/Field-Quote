@@ -45,7 +45,11 @@ export default function Team() {
             transition={{ duration: 0.7, delay: 0.15 }}
             style={{
               flex: '1 1 350px',
-              background: 'var(--lime)',
+              background: 'rgba(0, 224, 196, 0.75)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+              border: '1px solid rgba(255,255,255,0.2)',
+              boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.1), inset 0 0 0 1px rgba(255,255,255,0.2)',
               borderRadius: 'var(--radius-lg)',
               padding: 'var(--space-lg)',
               aspectRatio: '1 / 1',
@@ -71,7 +75,7 @@ export default function Team() {
               fontFamily: 'var(--font-display)',
               fontWeight: 700,
               color: 'var(--dark-green)',
-              opacity: 0.7,
+              opacity: 0.9,
               marginTop: '0.5rem',
               textTransform: 'uppercase',
               letterSpacing: '0.05em'

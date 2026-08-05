@@ -33,12 +33,12 @@ export default function Header() {
         width: scrolled ? 'min(92%, 1000px)' : '100%',
         padding: scrolled ? '10px 10px 10px 24px' : '20px clamp(1.5rem, 5vw, 4rem)',
         zIndex: 100,
-        background: scrolled ? 'rgba(255, 255, 255, 0.6)' : 'transparent',
-        backdropFilter: scrolled ? 'blur(16px) saturate(180%)' : 'none',
-        WebkitBackdropFilter: scrolled ? 'blur(16px) saturate(180%)' : 'none',
-        border: scrolled ? '1px solid rgba(0,0,0,0.06)' : '1px solid transparent',
+        background: scrolled ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%)' : 'transparent',
+        backdropFilter: scrolled ? 'blur(24px) saturate(200%)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'blur(24px) saturate(200%)' : 'none',
+        border: scrolled ? '1px solid rgba(255,255,255,0.5)' : '1px solid transparent',
         borderRadius: scrolled ? 'var(--radius-pill)' : '0',
-        boxShadow: scrolled ? '0 8px 32px rgba(0,0,0,0.12)' : 'none',
+        boxShadow: scrolled ? '0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 0 0 1px rgba(255,255,255,0.3)' : 'none',
         transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
         display: 'flex',
         alignItems: 'center',
@@ -79,13 +79,13 @@ export default function Header() {
       {/* CTA Buttons */}
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         <motion.a
-          whileHover={{ scale: 1.03, boxShadow: '0 6px 24px rgba(11,29,44,0.4)' }}
+          whileHover={{ scale: 1.03, boxShadow: '0 6px 24px rgba(0,224,196,0.3)' }}
           whileTap={{ scale: 0.97 }}
           href="https://fieldquote-26446.bubbleapps.io/version-13h94/login"
           style={{
             padding: '10px 22px',
-            background: 'var(--dark-green)',
-            color: 'var(--cream)',
+            background: 'var(--lime)',
+            color: '#000',
             fontFamily: 'var(--font-display)',
             fontWeight: 700,
             fontSize: '0.85rem',

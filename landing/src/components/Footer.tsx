@@ -6,7 +6,7 @@ import Logo from '@/components/Logo';
 export default function Footer() {
   return (
     <footer style={{
-      background: 'var(--near-black)',
+      background: 'var(--dark-green)',
       color: 'var(--text-light)',
       paddingTop: 'var(--space-xl)',
       position: 'relative',
@@ -57,46 +57,47 @@ export default function Footer() {
                 </motion.a>
               ))}
             </div>
+            <div>
+              <div style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 'var(--text-sm)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '1rem', opacity: 0.4 }}>Legal</div>
+              <span style={{ display: 'block', fontSize: 'var(--text-base)', opacity: 0.7, marginBottom: '0.6rem' }}>© 2026 FieldQuote.</span>
+              <span style={{ display: 'block', fontSize: 'var(--text-base)', opacity: 0.7, marginBottom: '0.6rem' }}>All rights reserved.</span>
+              <span style={{ display: 'block', fontSize: 'var(--text-base)', opacity: 0.7, marginBottom: '0.6rem', marginTop: '1.2rem' }}>Designed with precision.</span>
+            </div>
           </div>
         </div>
-
-        {/* Giant branding */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          style={{
-            fontSize: 'clamp(3rem, 10vw, 10rem)',
-            fontFamily: 'var(--font-display)',
-            fontWeight: 800,
-            lineHeight: 0.85,
-            letterSpacing: '-0.04em',
-            textAlign: 'center',
-            color: 'var(--lime)',
-            padding: 'var(--space-lg) 0',
-            opacity: 0.15,
-            userSelect: 'none'
-          }}
-        >
-          FIELDQUOTE.
-        </motion.div>
-
-        {/* Copyright */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          opacity: 0.35,
-          fontSize: 'var(--text-sm)',
-          borderTop: '1px solid rgba(255,255,255,0.08)',
-          padding: '1.5rem 0'
-        }}>
-          <span>© 2026 FieldQuote. All rights reserved.</span>
-          <span>Designed with precision.</span>
-        </div>
       </div>
+      
+      {/* Spacer for absolute text */}
+      <div style={{ height: '18vw', minHeight: '120px' }} />
+
+      {/* Giant branding - Moved outside container for perfect edge-to-edge alignment */}
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        transition={{ duration: 0.8 }}
+        style={{
+          fontSize: 'clamp(4rem, 12.5vw, 25rem)', /* tuned so 11 chars fit perfectly inside the footer element width */
+          fontFamily: 'var(--font-display)',
+          fontWeight: 800,
+          lineHeight: 0.75,
+          letterSpacing: '-0.06em',
+          textAlign: 'center',
+          color: 'var(--lime)',
+          padding: 0,
+          opacity: 0.15,
+          userSelect: 'none',
+          position: 'absolute',
+          bottom: '-4%',
+          left: 0,
+          right: 0,
+          whiteSpace: 'nowrap',
+          width: '100%', /* explicitly use the element's 100% width, not viewport width, to avoid scrollbar overflow */
+          zIndex: 0
+        }}
+      >
+        FIELDQUOTE.
+      </motion.div>
     </footer>
   );
 }

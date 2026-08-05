@@ -15,15 +15,17 @@ export default function Quality() {
             viewport={{ once: true }}
             transition={{ duration: 0.5 }}
             style={{
-              background: '#fff',
+              background: 'rgba(255, 255, 255, 0.7)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               padding: '4rem 3rem',
               borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--border-light)',
-              boxShadow: '0 10px 30px rgba(0,0,0,0.03)'
+              border: '1px solid rgba(255,255,255,0.8)',
+              boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 0 0 1px rgba(255,255,255,0.3)'
             }}
           >
-            <TrendingDown size={40} style={{ color: 'var(--lime)', marginBottom: '1.5rem' }} />
-            <h3 style={{ fontSize: 'var(--text-h3)', marginBottom: '1rem', color: 'var(--text-dark)' }}>
+            <TrendingDown size={44} style={{ color: 'var(--lime)', marginBottom: '1.5rem' }} />
+            <h3 style={{ fontFamily: 'var(--font-marker)', fontSize: 'clamp(2rem, 3vw, 2.5rem)', marginBottom: '1rem', color: 'var(--text-dark)', fontWeight: 'normal', letterSpacing: '0.05em' }}>
               FAIR, MARKET-BEATING PRICES
             </h3>
             <p style={{ fontSize: 'var(--text-base)', color: '#68736E', lineHeight: 1.6 }}>
@@ -37,15 +39,18 @@ export default function Quality() {
             viewport={{ once: true }}
             transition={{ duration: 0.5, delay: 0.15 }}
             style={{
-              background: 'var(--dark-green)',
+              background: 'rgba(11, 29, 44, 0.85)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               padding: '4rem 3rem',
               borderRadius: 'var(--radius-lg)',
               color: 'var(--text-light)',
-              boxShadow: '0 20px 40px rgba(11,29,44,0.15)'
+              border: '1px solid rgba(255,255,255,0.15)',
+              boxShadow: '0 10px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05)'
             }}
           >
-            <ShieldCheck size={40} style={{ color: 'var(--lime)', marginBottom: '1.5rem' }} />
-            <h3 style={{ fontSize: 'var(--text-h3)', marginBottom: '1rem' }}>
+            <ShieldCheck size={44} style={{ color: 'var(--lime)', marginBottom: '1.5rem' }} />
+            <h3 style={{ fontFamily: 'var(--font-marker)', fontSize: 'clamp(2rem, 3vw, 2.5rem)', marginBottom: '1rem', fontWeight: 'normal', letterSpacing: '0.05em' }}>
               STRICT QUALITY PROTOCOLS
             </h3>
             <p style={{ fontSize: 'var(--text-base)', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>

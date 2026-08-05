@@ -77,11 +77,14 @@ export default function Reviews() {
             style={{
               flex: '1.2 1 450px',
               padding: '4rem 3rem',
-              background: '#fff',
+              background: 'rgba(255, 255, 255, 0.75)',
+              backdropFilter: 'blur(24px) saturate(180%)',
+              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+              border: '1px solid rgba(255,255,255,0.8)',
               borderRadius: 'var(--radius-lg)',
               display: 'flex',
               flexDirection: 'column',
-              boxShadow: '0 20px 40px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.05)',
+              boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 0 0 1px rgba(255,255,255,0.3)',
               position: 'relative',
               overflow: 'hidden'
             }}
@@ -155,9 +158,12 @@ export default function Reviews() {
                 transition={{ duration: 0.5, delay: i * 0.15 }}
                 style={{
                   padding: '2rem',
-                  background: '#fff',
+                  background: 'rgba(255, 255, 255, 0.75)',
+                  backdropFilter: 'blur(24px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(24px) saturate(180%)',
+                  border: '1px solid rgba(255,255,255,0.8)',
                   borderRadius: 'var(--radius-md)',
-                  boxShadow: '0 10px 20px rgba(0,0,0,0.04)',
+                  boxShadow: '0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 0 0 1px rgba(255,255,255,0.3)',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '1rem',

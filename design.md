@@ -7,18 +7,23 @@ FieldQuote is the operations workflow for independent electricians and small ele
 ## Visual system
 
 ### Mood
+
 Minimal, hyper-modern, fluid, and confident. The aesthetic draws inspiration from high-end digital agencies (like Obys) but applies it to practical field service tools.
 
 ### Colour
-- `Lime Green #b7ff00`: The primary accent color for calls to action, highlights, and energy. It provides a striking, high-contrast pop.
-- `Off-White #F6F7F6`: The primary background color. Soft and clean, ensuring the high-contrast elements stand out.
-- `Deep Slate #121514`: Used for text, major dark components, and inverted elements. It provides a severe, premium contrast against the off-white and lime green.
+
+- `Neon Cyan / Teal Accent #00E0C4`: A vibrant, energetic cyan/teal accent used for calls to action, glowing spotlight effects, and high-impact cards.
+- `Cream #F7F9FC`: The primary base background color for the application. Soft and clean.
+- `Deep Navy Blue #0B1D2C`: Used for text, massive typography blocks, and dark solid components. Provides a severe, premium contrast.
 
 ### Typography
-- **Display (Headings)**: `Outfit` (or similar clean geometric sans-serif) used at massive, fluid sizes (up to `9rem` or `12vw`). Headings should be bold, tightly tracked, and commanding.
-- **Interface/Body**: `Inter` for clean, dense product information and paragraph readability.
+
+- **Display (Headings)**: `Outfit` at massive, fluid sizes. Tightly tracked, heavy weights, and commanding.
+- **Accent (Headings)**: `Permanent Marker` used for high-impact card headings (white-on-dark), massive fluid sizing (`clamp(2.5rem, 4vw, 3.5rem)`).
+- **Interface/Body**: `Manrope` for clear, modern paragraph readability. Base font sizes have been increased for better legibility and a bolder presence.
 
 ### Motion and interaction
+
 - **Super Fluid**: Use `framer-motion` for buttery smooth easings (`cubic-bezier(0.16, 1, 0.3, 1)`).
 - **Magnetic/Lift Hovers**: Buttons and cards should have subtle magnetic pulls or lift-and-invert states when hovered.
 - **Live Scrolling**: Continuous marquee text to communicate energy and volume of services.
