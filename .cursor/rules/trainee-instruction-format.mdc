@@ -1,0 +1,52 @@
+---
+description: Trainee instruction format — compact roadmap first, then detail part-by-part
+alwaysApply: true
+---
+
+# Instruction layout (trainee preference)
+
+When teaching Bubble steps, workflows, API Connector setup, or multi-step fixes: **never dump long detail under Step 1, 2, 3… in one flat list.** Use roadmap → then expand one part at a time.
+
+## Required shape
+
+### A) Top — compact roadmap only
+Short numbered list (**1–N**). Each line = **one short phrase** (what, not how). No tables, no URLs, no “click here then…” under the roadmap.
+
+Example:
+
+```
+## Steps
+1. Add page custom states
+2. Update List Quotes connector
+3. Bind Quotes table
+4. Wire Do every bumps
+5. Test
+```
+
+### B) Then — detail by part
+Expand **Part 1 completely** (`1.1`, `1.2`, …), then **Part 2**, etc. Headings stay short. Put full clicks, values, URLs, tables **only** inside that part.
+
+```
+## 1. Add page custom states
+1.1 Click page admin_dashboard → Custom states
+1.2 Create s_quotes_ts (number), default 0
+1.3 Create s_pricebook_ts (number), default 0
+
+## 2. Update List Quotes connector
+2.1 …
+```
+
+### C) Optional one-liner under a part title
+One sentence max under `## 1. …` if needed. All how-to goes in `1.1+`.
+
+## Do not
+
+- Mix a 5-step list where each “step” is a long paragraph / nested bullets / full connector spec
+- Put Part 2 detail before Part 1 is finished
+- Use vague “do the usual” in the roadmap — short concrete labels only
+- Repeat the whole roadmap again inside every part
+
+## Still apply elsewhere
+
+- API Connector calls stay **B2/D3-complete** (full URL, headers, init values) — but place that completeness **inside the relevant part** (e.g. under §2), not in the top roadmap
+- Prefer pointed replies; roadmap stays scannable on one screen

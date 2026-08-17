@@ -1,0 +1,41 @@
+---
+description: Bubble API Connector docs must be trainee-complete (full URL, headers, init values)
+alwaysApply: true
+---
+
+# Bubble API Connector — mandatory detail level
+
+When documenting or asking the trainee to add **any** API Connector call (Action or Data), **never** summarize. Match the depth of guide §B2 / Phase D3 — copy-paste ready.
+
+## Every new connector MUST include
+
+1. **Name** (exact Bubble call name)
+2. **Use as** — Action vs Data (and why)
+3. **Method** + **full URL** (never `.../` — use `https://chqljfdmgdtsmbbwbdyv.supabase.co/...`)
+4. **Each header** in a table: key, exact value, Private yes/no, what it does
+5. **Body / query params** — template with bare `<placeholders>`; table of each placeholder:
+   - Bubble type
+   - meaning
+   - **Initialize value with quotes** (example UUID / JWT / JSON)
+   - **Workflow value** (`Current User's sb_access_token`, `:formatted as JSON-safe`, page state)
+6. **Include errors** — on or off (and why; list GETs usually OFF)
+7. **Accept** header if single-row PostgREST (`application/vnd.pgrst.object+json`) vs list (omit)
+8. **Success shape** — field names Bubble will see after Initialize
+9. **Error table** — status → meaning → fix
+10. Explicit rule: template `"key": <key>` unquoted; Initialize `"uuid-here"`; workflow JSON-safe
+
+## Order (non-negotiable)
+
+**Deploy/edge (if needed) → API Connector Initialize succeeds → only then UI / workflows.**
+
+## Do not
+
+- Write “Bearer + apikey” without spelling both headers
+- Use abbreviated URLs (`GET .../quotes`)
+- Say “Initialize with a real id” without an example quoted value format
+- Skip Private vs dynamic on `Authorization`
+
+## Where this lives
+
+- Handoff: `PROJECT_MEMORY.md` §12 Working style
+- Full examples: `doc/MD-files/perform/05-request-inbox-ai-quote-send-guide.md` (§B2, D3, E3)

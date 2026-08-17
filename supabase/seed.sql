@@ -43,5 +43,11 @@ insert into public.price_book_items (company_id, name, category, unit, unit_pric
   ('00000000-0000-0000-0000-000000000001', '7 kW EV charger installation', 'EV charging', 'job', 890.00, '7kW EV charger installation electric vehicle home charging'),
   ('00000000-0000-0000-0000-000000000001', 'EV charger load management unit', 'EV charging', 'unit', 230.00, 'EV charger load management CT clamp electrical'),
   ('00000000-0000-0000-0000-000000000001', 'Partial rewire — one room', 'Consumer units & rewires', 'job', 650.00, 'partial rewire room cables sockets lights'),
-  ('00000000-0000-0000-0000-000000000001', 'Full property rewire survey', 'Consumer units & rewires', 'job', 195.00, 'full rewire property survey electrical installation')
+  ('00000000-0000-0000-0000-000000000001', 'Full property rewire survey', 'Consumer units & rewires', 'job', 195.00, 'full rewire property survey electrical installation'),
+  -- HVAC / AC (for intake + draft-quote smoke tests)
+  ('00000000-0000-0000-0000-000000000001', 'AC call-out / diagnosis', 'HVAC', 'job', 95.00, 'AC aircon air conditioning diagnosis call out not cooling fault'),
+  ('00000000-0000-0000-0000-000000000001', 'Split-system AC installation', 'HVAC', 'job', 850.00, 'AC aircon air conditioning split system install installation new unit'),
+  ('00000000-0000-0000-0000-000000000001', 'Window / portable AC install assist', 'HVAC', 'job', 180.00, 'window portable AC aircon install installation'),
+  ('00000000-0000-0000-0000-000000000001', 'AC gas top-up / recharge', 'HVAC', 'job', 220.00, 'AC gas refrigerant recharge top up not cooling'),
+  ('00000000-0000-0000-0000-000000000001', 'HVAC labour', 'HVAC', 'hour', 75.00, 'HVAC AC aircon labour hourly installation repair')
 on conflict do nothing;

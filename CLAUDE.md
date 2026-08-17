@@ -1,6 +1,6 @@
 # CLAUDE.md — FieldQuote
 
-Agent + contributor guide for the `fieldquote` monorepo. Scope doc section references (§) point to the FieldQuote scope document. Read `backend.md` for the schema and connection patterns; read `roadmap.md` for build sequence.
+Agent + contributor guide for the `fieldquote` monorepo. Scope doc section references (§) point to the FieldQuote scope document. Read `doc/plan/P2-backend.md` for the schema and connection patterns; read `doc/plan/P1-roadmap.md` for build sequence. Doc index: `doc/MD-files/00-INDEX.md`.
 
 ## Repo layout
 

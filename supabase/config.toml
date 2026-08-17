@@ -456,3 +456,15 @@ entrypoint = "./functions/r2-presign/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/r2-presign/*.html" ]
+
+[functions.set-technician-active]
+enabled = true
+verify_jwt = false
+import_map = "./functions/set-technician-active/deno.json"
+entrypoint = "./functions/set-technician-active/index.ts"
+
+[functions.complete-password-setup]
+enabled = true
+verify_jwt = false
+import_map = "./functions/complete-password-setup/deno.json"
+entrypoint = "./functions/complete-password-setup/index.ts"
