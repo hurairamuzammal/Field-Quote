@@ -1,0 +1,110 @@
+﻿Naming Conventions
+
+Elements
+
+Note: Each element should have a unique, generic name to avoid duplication. No element should have an auto generated name from Bubble.
+
+Element
+	
+Naming convention to be followed 
+
+	
+
+	Groups
+	G:
+	G: Dashboard
+	RepeatingGroups
+	RG:
+	RG: Items
+	FloatingGroup
+	FG:
+	FG: Header
+	ReusableElement
+	RE:
+	RE: Header
+	
+
+  
+
+
+Style
+
+Structure
+Prefix: Indicate the type of element or the context.
+Base Name: Describe the element with its properties. (size and colour)
+Modifier: Add any specific state or variation.(weight)
+
+ Example Format
+heading-12pxBlack-400
+
+
+
+
+
+Data Type
+
+Relational Data field 
+	Use keyword “related” at start and then table name when storing unique ids
+	related_user
+related_project 
+	Option Sets
+	Use Keyword “OS” at start then option set name. This prefix should be used for both The option set name in option set section as well as the data fields which has type option sets 
+	OS role 
+OS type 
+	List 
+	Use keyword “listof” when storing  list of  data
+	listof_degrees
+	List of relational Data  
+	Use keyword “listof” when storing  list of  unique ids
+	related_listof_users
+related_listof_projects
+	
+
+
+
+
+Commenting In Bubble
+
+As apps get bigger, it is important to keep track of what the different pages, key actions, styles and data types are about. This will make modifying the app down the line easier, and will help other people collaborate with you on the application simpler.
+
+
+How to add comments anywhere in Bubble
+
+
+ Read bubble docs for more context on commenting in bubble
+
+
+
+
+Comments on Privacy Rules
+Author: Umer
+Function: These rules are being used on admin portal to modify admin notes via Auto-Binding
+Date (creation): 31/10/2022
+
+Comments on Option Sets
+Author: Umer
+Function: We are creating this option set to store the week days range to use it on job posting journey
+Date (creation): 31/10/2022
+Comments on Database Table
+Author: Umer
+Function: This table is needed to store job records
+Date (creation): 31/10/2022
+
+Comments on Database Field
+Author: Umer
+Function: We need to sort the jobs based on their status i.e. Active, Under Review, Inactive, Reject. As option set can’t be used for sorting, we added this extra field which will store numbers i.e. 1, 2, 3, 4 respectively to perform sorting.
+Date (creation): 31/10/2022
+Comments on workflow (backend and frontend)
+Author: Umer
+Function: Short explanation of function of workflow in 1- 3 lines.
+Date (creation): 31/10/2022
+
+Comments on UI Element Conditions, If Needed
+Author: Umer
+Condition:  When Current User is logged in
+Do this: Change button color to Blue
+Date (creation): 31/10/2022
+Comments for Custom States
+Author: Umer
+Function: This state is being used to store OTP code during worker signup/onboarding to validate if they added right OTP code, so that they can create an account in Taraki app
+Date (creation): 31/10/2022

@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FieldQuote — Admin responsive inspiration</title>
+  <style>
+    :root {
+      --teal: #00b8a1;
+      --teal-deep: #029d89;
+      --teal-soft: #ecfdf3;
+      --ink: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --surface: #ffffff;
+      --page: #f8fafc;
+      --danger: #b91c1c;
+      --warn: #b45309;
+      --ok: #047857;
+      --card-radius: 12px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      color: var(--ink);
+      background: #0b1220;
+    }
+
+    .studio {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      min-height: 100vh;
+    }
+
+    .controls {
+      background: #111827;
+      color: #e5e7eb;
+      padding: 20px 18px;
+      border-right: 1px solid #1f2937;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      overflow: auto;
+    }
+    .controls h1 {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+    }
+    .controls p {
+      margin: 0;
+      font-size: 12px;
+      line-height: 1.45;
+      color: #9ca3af;
+    }
+    .controls label {
+      display: block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #9ca3af;
+      margin-bottom: 8px;
+    }
+    .width-readout {
+      font-variant-numeric: tabular-nums;
+      font-size: 28px;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+    .width-readout span {
+      font-size: 13px;
+      font-weight: 500;
+      color: #9ca3af;
+      margin-left: 6px;
+    }
+    input[type="range"] { width: 100%; }
+    .presets, .panel-picks {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .presets button, .panel-picks button {
+      border: 1px solid #374151;
+      background: #1f2937;
+      color: #e5e7eb;
+      border-radius: 999px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .presets button.active, .panel-picks button.active {
+      background: var(--teal);
+      border-color: var(--teal);
+      color: #042f2e;
+      font-weight: 700;
+    }
+    .mode-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: #1f2937;
+      font-size: 12px;
+    }
+    .mode-pill strong { color: #fff; }
+    .dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: var(--teal);
+    }
+    .plan {
+      border-top: 1px solid #1f2937;
+      padding-top: 14px;
+    }
+    .plan h2 {
+      margin: 0 0 10px;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #9ca3af;
+      font-weight: 600;
+    }
+    .plan ol {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 12px;
+      line-height: 1.55;
+      color: #d1d5db;
+    }
+    .plan ol li { margin-bottom: 4px; }
+    .plan ol li strong { color: #fff; font-weight: 600; }
+    .headings-ref {
+      border-top: 1px solid #1f2937;
+      padding-top: 14px;
+      font-size: 12px;
+      color: #9ca3af;
+      line-height: 1.5;
+      margin-top: auto;
+    }
+    .headings-ref strong { color: #e5e7eb; }
+    .headings-ref code {
+      color: #a7f3d0;
+      font-size: 11px;
+    }
+
+    .stage-wrap {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      align-items: center;
+      overflow: auto;
+    }
+    .stage-label {
+      align-self: stretch;
+      color: #9ca3af;
+      font-size: 12px;
+    }
+    .stage {
+      background: #020617;
+      border: 1px solid #1f2937;
+      border-radius: 16px;
+      padding: 12px;
+      width: min(100%, calc(var(--preview-w) + 24px));
+    }
+    .device {
+      position: relative;
+      width: var(--preview-w);
+      height: min(760px, 86vh);
+      background: var(--page);
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid #334155;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      background: var(--page);
+    }
+
+    .sidebar {
+      width: 220px;
+      background: var(--teal);
+      color: #042f2e;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px 12px 20px;
+      flex-shrink: 0;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      margin-bottom: 28px;
+      font-size: 18px;
+    }
+    .nav { display: flex; flex-direction: column; gap: 4px; }
+    .nav button, .side-bottom button {
+      width: 100%;
+      text-align: left;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      border-radius: 12px;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .nav button.active {
+      background: rgba(255,255,255,0.28);
+    }
+    .side-bottom {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      border-top: 1px solid rgba(2,157,137,0.55);
+      padding-top: 12px;
+    }
+
+    .main {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--line);
+      background: var(--surface);
+    }
+    .burger {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--line);
+      background: #fff;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink);
+      font-size: 18px;
+    }
+    .topbar h2 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 700;
+    }
+    .topbar .hint {
+      margin-left: auto;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .content {
+      padding: 18px 14px 28px;
+      overflow: auto;
+      flex: 1;
+    }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .panel-title {
+      margin: 0 0 4px;
+      font-size: 22px;
+      font-weight: 750;
+      letter-spacing: -0.02em;
+    }
+    .panel-line {
+      margin: 0 0 18px;
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+
+    .block { margin-bottom: 20px; }
+    .block-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .block-title {
+      margin: 0;
+      font-size: 15px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+    .btn-primary {
+      border: 0;
+      background: var(--teal);
+      color: #042f2e;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 8px 12px;
+      font-size: 13px;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .invite-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .invite-row input {
+      flex: 1;
+      min-width: 120px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+      background: #fff;
+    }
+
+    .table-wrap {
+      display: none;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    thead th {
+      text-align: left;
+      padding: 12px 14px;
+      background: #f1f5f9;
+      color: var(--muted);
+      font-weight: 600;
+      font-size: 12px;
+      border-bottom: 1px solid var(--line);
+      white-space: nowrap;
+    }
+    tbody td {
+      padding: 14px;
+      border-bottom: 1px solid var(--line);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr { cursor: pointer; }
+    tbody tr:hover { background: var(--teal-soft); }
+    .mono { font-variant-numeric: tabular-nums; }
+    .money { font-weight: 700; }
+
+    .cards {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--card-radius);
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      cursor: pointer;
+    }
+    .card:active { background: var(--teal-soft); }
+    .card-top, .card-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+    .qnum { font-weight: 750; font-size: 14px; }
+    .customer {
+      font-size: 13px;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .meta { font-size: 12px; color: var(--muted); }
+    .total {
+      font-size: 15px;
+      font-weight: 750;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: lowercase;
+      white-space: nowrap;
+    }
+    .status.draft { background: #e2e8f0; color: #334155; }
+    .status.sent { background: #dbeafe; color: #1d4ed8; }
+    .status.accepted { background: #d1fae5; color: var(--ok); }
+    .status.needs_manual { background: #ffedd5; color: var(--warn); }
+    .status.declined { background: #fee2e2; color: var(--danger); }
+    .status.new { background: #e0e7ff; color: #3730a3; }
+    .status.active { background: #d1fae5; color: var(--ok); }
+    .status.invited { background: #ffedd5; color: var(--warn); }
+    .status.open { background: #dbeafe; color: #1d4ed8; }
+    .status.scheduled { background: #d1fae5; color: var(--ok); }
+    .status.done { background: #e2e8f0; color: #334155; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .form-grid label {
+      display: block;
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      text-transform: none;
+      letter-spacing: 0;
+    }
+    .form-grid input, .form-grid select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 13px;
+    }
+    .form-grid .full { grid-column: 1 / -1; }
+    .device[data-mode="mobile"] .form-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .popup {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      z-index: 5;
+    }
+    .popup.open { display: flex; }
+    .popup-card {
+      width: min(100%, 420px);
+      background: #fff;
+      border-radius: 12px;
+      border-left: 6px solid var(--teal);
+      padding: 18px 18px 16px;
+    }
+    .popup-card h3 { margin: 0 0 6px; font-size: 18px; }
+    .popup-card p { margin: 0 0 14px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+    .popup-card button {
+      border: 0;
+      background: var(--teal);
+      color: #042f2e;
+      font-weight: 700;
+      border-radius: 10px;
+      padding: 10px 14px;
+      cursor: pointer;
+    }
+
+    .device[data-mode="desktop"] .sidebar { display: flex; }
+    .device[data-mode="desktop"] .burger { display: none; }
+    .device[data-mode="desktop"] .table-wrap { display: block; }
+    .device[data-mode="desktop"] .cards { display: none; }
+    .device[data-mode="desktop"] .col-secondary { display: table-cell; }
+
+    .device[data-mode="tablet"] .sidebar { display: none; }
+    .device[data-mode="tablet"] .burger { display: inline-flex; }
+    .device[data-mode="tablet"] .table-wrap { display: block; }
+    .device[data-mode="tablet"] .cards { display: none; }
+    .device[data-mode="tablet"] .col-secondary { display: none; }
+
+    .device[data-mode="mobile"] .sidebar { display: none; }
+    .device[data-mode="mobile"] .burger { display: inline-flex; }
+    .device[data-mode="mobile"] .table-wrap { display: none; }
+    .device[data-mode="mobile"] .cards { display: flex; }
+
+    @media (max-width: 900px) {
+      .studio { grid-template-columns: 1fr; }
+      .controls { border-right: 0; border-bottom: 1px solid #1f2937; max-height: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="studio" style="--preview-w: 1100px;">
+    <aside class="controls">
+      <div>
+        <h1>Admin layout inspiration</h1>
+        <p>Short headings + one-line plans. Resize to see table → cards under 700px.</p>
+      </div>
+
+      <div>
+        <label>Panel</label>
+        <div class="panel-picks" id="panelPicks">
+          <button type="button" data-panel="home">Home</button>
+          <button type="button" data-panel="quotes" class="active">Quotes</button>
+          <button type="button" data-panel="requests">Requests</button>
+          <button type="button" data-panel="technicians">Technicians</button>
+          <button type="button" data-panel="price">Price</button>
+          <button type="button" data-panel="tracking">Tracking</button>
+          <button type="button" data-panel="company">Company</button>
+        </div>
+      </div>
+
+      <div>
+        <label>Preview width</label>
+        <div class="width-readout"><span id="widthNum">1100</span><span>px</span></div>
+        <input id="width" type="range" min="320" max="1200" step="10" value="1100" />
+        <div class="presets" style="margin-top:10px;">
+          <button type="button" data-w="320">320</button>
+          <button type="button" data-w="390">390</button>
+          <button type="button" data-w="700">700</button>
+          <button type="button" data-w="900">900</button>
+          <button type="button" data-w="1100" class="active">1100</button>
+        </div>
+      </div>
+
+      <div class="mode-pill">
+        <span class="dot"></span>
+        <span>Showing: <strong id="modeLabel">desktop table</strong></span>
+      </div>
+
+      <div class="plan">
+        <h2>Plan (one line each)</h2>
+        <ol>
+          <li><strong>Home</strong> — snapshot cards only</li>
+          <li><strong>Quotes</strong> — table / cards → quote popup</li>
+          <li><strong>Requests</strong> — table / cards → request popup</li>
+          <li><strong>Technicians</strong> — invite row + tech table</li>
+          <li><strong>Price</strong> — add price + price table</li>
+          <li><strong>Tracking</strong> — job table / cards</li>
+          <li><strong>Company</strong> — settings form</li>
+        </ol>
+      </div>
+
+      <div class="headings-ref">
+        <div><strong>Bubble heading copy</strong> (1–2 words)</div>
+        <div>Home → <code>Overview</code></div>
+        <div>Quotes → <code>Quote table</code></div>
+        <div>Requests → <code>Request table</code></div>
+        <div>Technicians → <code>Add technician</code> + <code>Tech table</code></div>
+        <div>Price → <code>Add price</code> + <code>Price table</code></div>
+        <div>Tracking → <code>Job table</code></div>
+        <div>Company → <code>Company form</code></div>
+      </div>
+    </aside>
+
+    <div class="stage-wrap">
+      <div class="stage-label">Live preview — switch panels + drag width</div>
+      <div class="stage">
+        <div class="device" id="device" data-mode="desktop">
+          <div class="app">
+            <aside class="sidebar">
+              <div>
+                <div class="brand">FieldQuote</div>
+                <div class="nav" id="sideNav">
+                  <button type="button" data-panel="home">Home</button>
+                  <button type="button" data-panel="quotes" class="active">Quotes</button>
+                  <button type="button" data-panel="requests">Requests</button>
+                  <button type="button" data-panel="technicians">Technicians</button>
+                  <button type="button" data-panel="price">Price Book</button>
+                  <button type="button" data-panel="tracking">Tracking</button>
+                </div>
+              </div>
+              <div class="side-bottom">
+                <button type="button" data-panel="company">Company</button>
+                <button type="button">Admin</button>
+              </div>
+            </aside>
+
+            <section class="main">
+              <div class="topbar">
+                <button class="burger" type="button" aria-label="Menu">☰</button>
+                <h2 id="topTitle">Quotes</h2>
+                <div class="hint" id="hint">full columns</div>
+              </div>
+
+              <div class="content">
+                <!-- HOME -->
+                <div class="panel" data-panel="home" id="panel-home">
+                  <h3 class="panel-title">Home</h3>
+                  <p class="panel-line">Snapshot cards only</p>
+                  <div class="block">
+                    <div class="block-head"><h4 class="block-title">Overview</h4></div>
+                    <div class="cards" style="display:flex;">
+                      <article class="card" style="cursor:default;"><div class="qnum">12 open</div><div class="meta">Requests</div></article>
+                      <article class="card" style="cursor:default;"><div class="qnum">5 drafts</div><div class="meta">Quotes</div></article>
+                      <article class="card" style="cursor:default;"><div class="qnum">3 jobs</div><div class="meta">Tracking</div></article>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- QUOTES -->
+                <div class="panel active" data-panel="quotes" id="panel-quotes">
+                  <h3 class="panel-title">Quotes</h3>
+                  <p class="panel-line">Table / cards → quote popup</p>
+                  <div class="block">
+                    <div class="block-head"><h4 class="block-title">Quote table</h4></div>
+                    <div class="table-wrap" data-list="quotes">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Quote #</th>
+                            <th>Status</th>
+                            <th class="col-secondary">Subtotal</th>
+                            <th>Total</th>
+                            <th class="col-secondary">Created</th>
+                            <th class="col-secondary">Email</th>
+                          </tr>
+                        </thead>
+                        <tbody id="quotesTable"></tbody>
+                      </table>
+                    </div>
+                    <div class="cards" id="quotesCards" data-list="quotes"></div>
+                  </div>
+                </div>
+
+                <!-- REQUESTS -->
+                <div class="panel" data-panel="requests" id="panel-requests">
+                  <h3 class="panel-title">Requests</h3>
+                  <p class="panel-line">Table / cards → request popup</p>
+                  <div class="block">
+                    <div class="block-head"><h4 class="block-title">Request table</h4></div>
+                    <div class="table-wrap" data-list="requests">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Status</th>
+                            <th class="col-secondary">Date</th>
+                            <th class="col-secondary">Description</th>
+                          </tr>
+                        </thead>
+                        <tbody id="requestsTable"></tbody>
+                      </table>
+                    </div>
+                    <div class="cards" id="requestsCards" data-list="requests"></div>
+                  </div>
+                </div>
+
+                <!-- TECHNICIANS -->
+                <div class="panel" data-panel="technicians" id="panel-technicians">
+                  <h3 class="panel-title">Technicians</h3>
+                  <p class="panel-line">Invite row + tech table</p>
+                  <div class="block">
+                    <div class="block-head">
+                      <h4 class="block-title">Add technician</h4>
+                      <button type="button" class="btn-primary">Invite</button>
+                    </div>
+                    <div class="invite-row">
+                      <input type="text" placeholder="Name" readonly />
+                      <input type="email" placeholder="Email" readonly />
+                    </div>
+                  </div>
+                  <div class="block">
+                    <div class="block-head"><h4 class="block-title">Tech table</h4></div>
+                    <div class="table-wrap" data-list="techs">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th class="col-secondary">Role</th>
+                          </tr>
+                        </thead>
+                        <tbody id="techsTable"></tbody>
+                      </table>
+                    </div>
+                    <div class="cards" id="techsCards" data-list="techs"></div>
+                  </div>
+                </div>
+
+                <!-- PRICE -->
+                <div class="panel" data-panel="price" id="panel-price">
+                  <h3 class="panel-title">Price</h3>
+                  <p class="panel-line">Add price + price table</p>
+                  <div class="block">
+                    <div class="block-head">
+                      <h4 class="block-title">Add price</h4>
+                      <button type="button" class="btn-primary" id="btnAddPrice">New price</button>
+                    </div>
+                  </div>
+                  <div class="block">
+                    <div class="block-head"><h4 class="block-title">Price table</h4></div>
+                    <div class="table-wrap" data-list="prices">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Name</th>
+                            <th>Value</th>
+                            <th class="col-secondary">Unit</th>
+                            <th class="col-secondary">Keywords</th>
+                          </tr>
+                        </thead>
+                        <tbody id="pricesTable"></tbody>
+                      </table>
+                    </div>
+                    <div class="cards" id="pricesCards" data-list="prices"></div>
+                  </div>
+                </div>
+
+                <!-- TRACKING -->
+                <div class="panel" data-panel="tracking" id="panel-tracking">
+                  <h3 class="panel-title">Tracking</h3>
+                  <p class="panel-line">Job table / cards</p>
+                  <div class="block">
+                    <div class="block-head"><h4 class="block-title">Job table</h4></div>
+                    <div class="table-wrap" data-list="jobs">
+                      <table>
+                        <thead>
+                          <tr>
+                            <th>Job #</th>
+                            <th>Status</th>
+                            <th>Tech</th>
+                            <th class="col-secondary">Customer</th>
+                          </tr>
+                        </thead>
+                        <tbody id="jobsTable"></tbody>
+                      </table>
+                    </div>
+                    <div class="cards" id="jobsCards" data-list="jobs"></div>
+                  </div>
+                </div>
+
+                <!-- COMPANY -->
+                <div class="panel" data-panel="company" id="panel-company">
+                  <h3 class="panel-title">Company</h3>
+                  <p class="panel-line">Settings form</p>
+                  <div class="block">
+                    <div class="block-head">
+                      <h4 class="block-title">Company form</h4>
+                      <button type="button" class="btn-primary">Save</button>
+                    </div>
+                    <div class="form-grid">
+                      <div class="full">
+                        <label>Company name</label>
+                        <input value="FieldQuote Demo Co" readonly />
+                      </div>
+                      <div>
+                        <label>Tax %</label>
+                        <input value="10" readonly />
+                      </div>
+                      <div>
+                        <label>Deposit %</label>
+                        <input value="30" readonly />
+                      </div>
+                      <div>
+                        <label>Labor rate</label>
+                        <input value="95" readonly />
+                      </div>
+                      <div>
+                        <label>Quote days</label>
+                        <input value="14" readonly />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="popup" id="popup">
+            <div class="popup-card">
+              <h3 id="popupTitle">Detail</h3>
+              <p id="popupBody">Existing popup flow — list chrome only changes.</p>
+              <button type="button" id="closePopup">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const titles = {
+      home: "Home",
+      quotes: "Quotes",
+      requests: "Requests",
+      technicians: "Technicians",
+      price: "Price",
+      tracking: "Tracking",
+      company: "Company",
+    };
+
+    const quotes = [
+      { id: "q_1042", number: "FQ-1042", status: "sent", customer: "Maria Lopez", email: "maria@example.com", subtotal: 420, total: 462, created: "Aug 10" },
+      { id: "q_1041", number: "FQ-1041", status: "needs_manual", customer: "Oak Street HOA", email: "ops@oakhoa.com", subtotal: 880, total: 968, created: "Aug 9" },
+      { id: "q_1040", number: "FQ-1040", status: "draft", customer: "James Chen", email: "james@chen.co", subtotal: 155, total: 170.5, created: "Aug 8" },
+      { id: "q_1039", number: "FQ-1039", status: "accepted", customer: "Bright Dental", email: "admin@brightdental.com", subtotal: 1260, total: 1386, created: "Aug 6" },
+    ];
+    const requests = [
+      { id: "r1", name: "Maria Lopez", status: "new", date: "Aug 12", desc: "AC not cooling upstairs" },
+      { id: "r2", name: "Oak Street HOA", status: "new", date: "Aug 11", desc: "Lobby light out" },
+      { id: "r3", name: "James Chen", status: "draft", date: "Aug 10", desc: "Water heater noise" },
+    ];
+    const techs = [
+      { id: "t1", name: "Alex Rivera", email: "alex@demo.co", role: "technician", status: "active" },
+      { id: "t2", name: "Sam Patel", email: "sam@demo.co", role: "technician", status: "invited" },
+      { id: "t3", name: "Jordan Lee", email: "jordan@demo.co", role: "technician", status: "active" },
+    ];
+    const prices = [
+      { id: "p1", name: "Diagnostic visit", value: 89, unit: "each", keywords: "diagnose,trip" },
+      { id: "p2", name: "Labor hour", value: 95, unit: "hour", keywords: "labor" },
+      { id: "p3", name: "Filter replace", value: 45, unit: "each", keywords: "filter,hvac" },
+    ];
+    const jobs = [
+      { id: "j1", number: "JB-220", status: "scheduled", tech: "Alex Rivera", customer: "Bright Dental" },
+      { id: "j2", number: "JB-219", status: "open", tech: "Jordan Lee", customer: "Maria Lopez" },
+      { id: "j3", number: "JB-218", status: "done", tech: "Alex Rivera", customer: "River Cafe" },
+    ];
+
+    const money = (n) => "$" + n.toLocaleString(undefined, { maximumFractionDigits: 2 });
+    const statusLabel = (s) => (s === "needs_manual" ? "needs pricing" : s);
+    const statusClass = (s) => "status " + (s === "needs_manual" ? "needs_manual" : s);
+
+    function openPopup(title, body) {
+      document.getElementById("popupTitle").textContent = title;
+      document.getElementById("popupBody").textContent = body;
+      document.getElementById("popup").classList.add("open");
+    }
+
+    function renderQuotes() {
+      const tbody = document.getElementById("quotesTable");
+      const cards = document.getElementById("quotesCards");
+      tbody.innerHTML = "";
+      cards.innerHTML = "";
+      quotes.forEach((q) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td class='mono'>" + q.number + "</td>" +
+          "<td><span class='" + statusClass(q.status) + "'>" + statusLabel(q.status) + "</span></td>" +
+          "<td class='col-secondary mono'>" + money(q.subtotal) + "</td>" +
+          "<td class='money mono'>" + money(q.total) + "</td>" +
+          "<td class='col-secondary'>" + q.created + "</td>" +
+          "<td class='col-secondary'>" + q.email + "</td>";
+        tr.onclick = () => openPopup(q.number, "Popup: Quote — same workflow as Row: Quotes.");
+        tbody.appendChild(tr);
+
+        const card = document.createElement("article");
+        card.className = "card";
+        card.innerHTML =
+          "<div class='card-top'><div class='qnum'>" + q.number + "</div><span class='" + statusClass(q.status) + "'>" + statusLabel(q.status) + "</span></div>" +
+          "<div class='customer'>" + q.customer + "</div>" +
+          "<div class='card-bottom'><div class='total'>" + money(q.total) + "</div><div class='meta'>" + q.created + "</div></div>";
+        card.onclick = () => openPopup(q.number, "Card click = same Popup: Quote.");
+        cards.appendChild(card);
+      });
+    }
+
+    function renderRequests() {
+      const tbody = document.getElementById("requestsTable");
+      const cards = document.getElementById("requestsCards");
+      tbody.innerHTML = "";
+      cards.innerHTML = "";
+      requests.forEach((r) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td>" + r.name + "</td>" +
+          "<td><span class='" + statusClass(r.status) + "'>" + r.status + "</span></td>" +
+          "<td class='col-secondary'>" + r.date + "</td>" +
+          "<td class='col-secondary'>" + r.desc + "</td>";
+        tr.onclick = () => openPopup(r.name, "Popup Request — existing detail flow.");
+        tbody.appendChild(tr);
+
+        const card = document.createElement("article");
+        card.className = "card";
+        card.innerHTML =
+          "<div class='card-top'><div class='qnum'>" + r.name + "</div><span class='" + statusClass(r.status) + "'>" + r.status + "</span></div>" +
+          "<div class='customer'>" + r.desc + "</div>" +
+          "<div class='card-bottom'><div class='meta'>" + r.date + "</div></div>";
+        card.onclick = () => openPopup(r.name, "Card click = same Popup Request.");
+        cards.appendChild(card);
+      });
+    }
+
+    function renderTechs() {
+      const tbody = document.getElementById("techsTable");
+      const cards = document.getElementById("techsCards");
+      tbody.innerHTML = "";
+      cards.innerHTML = "";
+      techs.forEach((t) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td>" + t.name + "</td>" +
+          "<td>" + t.email + "</td>" +
+          "<td class='col-secondary'><span class='" + statusClass(t.status) + "'>" + t.status + "</span></td>";
+        tbody.appendChild(tr);
+
+        const card = document.createElement("article");
+        card.className = "card";
+        card.style.cursor = "default";
+        card.innerHTML =
+          "<div class='card-top'><div class='qnum'>" + t.name + "</div><span class='" + statusClass(t.status) + "'>" + t.status + "</span></div>" +
+          "<div class='customer'>" + t.email + "</div>";
+        cards.appendChild(card);
+      });
+    }
+
+    function renderPrices() {
+      const tbody = document.getElementById("pricesTable");
+      const cards = document.getElementById("pricesCards");
+      tbody.innerHTML = "";
+      cards.innerHTML = "";
+      prices.forEach((p) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td>" + p.name + "</td>" +
+          "<td class='money mono'>" + money(p.value) + "</td>" +
+          "<td class='col-secondary'>" + p.unit + "</td>" +
+          "<td class='col-secondary'>" + p.keywords + "</td>";
+        tr.onclick = () => openPopup(p.name, "Popup Edit Price — existing flow.");
+        tbody.appendChild(tr);
+
+        const card = document.createElement("article");
+        card.className = "card";
+        card.innerHTML =
+          "<div class='card-top'><div class='qnum'>" + p.name + "</div><div class='total'>" + money(p.value) + "</div></div>" +
+          "<div class='card-bottom'><div class='meta'>" + p.unit + "</div><div class='meta'>" + p.keywords + "</div></div>";
+        card.onclick = () => openPopup(p.name, "Card click = same edit popup.");
+        cards.appendChild(card);
+      });
+    }
+
+    function renderJobs() {
+      const tbody = document.getElementById("jobsTable");
+      const cards = document.getElementById("jobsCards");
+      tbody.innerHTML = "";
+      cards.innerHTML = "";
+      jobs.forEach((j) => {
+        const tr = document.createElement("tr");
+        tr.innerHTML =
+          "<td class='mono'>" + j.number + "</td>" +
+          "<td><span class='" + statusClass(j.status) + "'>" + j.status + "</span></td>" +
+          "<td>" + j.tech + "</td>" +
+          "<td class='col-secondary'>" + j.customer + "</td>";
+        tbody.appendChild(tr);
+
+        const card = document.createElement("article");
+        card.className = "card";
+        card.style.cursor = "default";
+        card.innerHTML =
+          "<div class='card-top'><div class='qnum'>" + j.number + "</div><span class='" + statusClass(j.status) + "'>" + j.status + "</span></div>" +
+          "<div class='customer'>" + j.customer + "</div>" +
+          "<div class='meta'>" + j.tech + "</div>";
+        cards.appendChild(card);
+      });
+    }
+
+    function setPanel(id) {
+      document.querySelectorAll(".panel").forEach((p) => p.classList.toggle("active", p.dataset.panel === id));
+      document.querySelectorAll("#panelPicks button, #sideNav button, .side-bottom button[data-panel]").forEach((b) => {
+        b.classList.toggle("active", b.dataset.panel === id);
+      });
+      document.getElementById("topTitle").textContent = titles[id] || id;
+    }
+
+    function modeFor(w) {
+      if (w < 700) return "mobile";
+      if (w < 1100) return "tablet";
+      return "desktop";
+    }
+    function modeCopy(mode) {
+      if (mode === "mobile") return { label: "mobile cards", hint: "cards · ~300px" };
+      if (mode === "tablet") return { label: "tablet slim table", hint: "hide secondary cols" };
+      return { label: "desktop table", hint: "full columns + sidebar" };
+    }
+
+    const studio = document.querySelector(".studio");
+    const device = document.getElementById("device");
+    const widthInput = document.getElementById("width");
+    const widthNum = document.getElementById("widthNum");
+    const modeLabel = document.getElementById("modeLabel");
+    const hint = document.getElementById("hint");
+
+    function applyWidth(w) {
+      studio.style.setProperty("--preview-w", w + "px");
+      widthNum.textContent = w;
+      widthInput.value = w;
+      const mode = modeFor(w);
+      device.dataset.mode = mode;
+      const copy = modeCopy(mode);
+      modeLabel.textContent = copy.label;
+      hint.textContent = copy.hint;
+      document.querySelectorAll(".presets button").forEach((b) => {
+        b.classList.toggle("active", Number(b.dataset.w) === w);
+      });
+      // Home overview cards always visible
+      const homeCards = document.querySelector("#panel-home .cards");
+      if (homeCards) homeCards.style.display = "flex";
+    }
+
+    widthInput.addEventListener("input", (e) => applyWidth(Number(e.target.value)));
+    document.querySelectorAll(".presets button").forEach((b) => {
+      b.addEventListener("click", () => applyWidth(Number(b.dataset.w)));
+    });
+    document.querySelectorAll("#panelPicks button, #sideNav button, .side-bottom button[data-panel]").forEach((b) => {
+      b.addEventListener("click", () => setPanel(b.dataset.panel));
+    });
+    document.getElementById("btnAddPrice").addEventListener("click", () => {
+      openPopup("New price", "Popup: New Price — existing form.");
+    });
+    document.getElementById("closePopup").addEventListener("click", () => {
+      document.getElementById("popup").classList.remove("open");
+    });
+    document.getElementById("popup").addEventListener("click", (e) => {
+      if (e.target.id === "popup") e.currentTarget.classList.remove("open");
+    });
+
+    renderQuotes();
+    renderRequests();
+    renderTechs();
+    renderPrices();
+    renderJobs();
+    applyWidth(1100);
+    setPanel("quotes");
+  </script>
+</body>
+</html>
