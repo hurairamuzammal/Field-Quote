@@ -42,7 +42,7 @@ Read `──<` as "one-to-many." The one flow to internalize: **request → quot
 ### 1.3 Table-by-table (with the *why*)
 
 **`profiles`** — staff only (customers never get accounts, §2).
-`id uuid PK` (mirrors `auth.users.id` — same person, same id in both), `company_id`, `role` (`'admin' | 'technician'` — a CHECK constraint, not free text), `full_name`, `email`, `phone`, `active bool`.
+`id uuid PK` (mirrors `auth.users.id` — same person, same id in both), `company_id`, `role` (`'admin' | 'technician'` — a CHECK constraint, not free text), `full_name`, `email`, `phone`, `active bool` (may log in), `setup_complete bool` (finished invite; stays true if later disabled).
 *Why `id` mirrors auth:* RLS policies compare row data against `auth.uid()` (the logged-in user's id from the JWT). Sharing the id makes that comparison a plain equality.
 
 **`company_settings`** — one row. `company_id`, `name`, `logo_key` (an R2 path string — files never live in the DB, §13 Rule 9), `deposit_pct`, `tax_pct`, `quote_validity_days`, `labor_rate`.
@@ -227,11 +227,12 @@ Final invoice = same loop with kind:"final", amount = total − deposit,
 
 ### 5.1 Edge function boilerplate every function shares
 ```ts
-const cors = { 'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type, apikey' };
+import { corsFor, corsPreflight } from '../_shared/cors.ts'
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  if (req.method === 'OPTIONS') return corsPreflight(req);
+  const cors = corsFor(req) // echoes Origin if Bubble / landing; never *
   // ...handler...
+```
 });
 ```
 Forgetting the OPTIONS/CORS block is why "it works in curl but not in Bubble."
@@ -319,7 +320,7 @@ Rules that keep you sane: **never** edit schema in the dashboard editor (if you 
 | `PUBLIC_QUOTE_PAGE_URL` | supabase secrets | send-quote customer link | optional — defaults to Bubble test `q` |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET` / account id / bucket | supabase secrets | r2-presign | Bubble, Git |
 | `MAKE_WEBHOOK_URL` | supabase secrets | stripe-webhook (final-payment branch) | Bubble (treat as secret — anyone with it can fire your scenario) |
-| `CRON_SECRET` (you invent it) | supabase secrets + the cron SQL | cron-called functions | Bubble |
+| `CRON_SECRET` (you invent it) | supabase secrets + `app.settings.cron_secret` GUC | cron-called functions + `send-final-invoice` | Bubble |
 | Vercel env (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) | Vercel dashboard → project → Environment Variables | landing waitlist form | Git |
 
 Bubble holds exactly **one** sensitive-ish value (the anon key) and it's the one designed to be exposed. If you ever feel the urge to paste any other key into Bubble, that feature belongs in an edge function.

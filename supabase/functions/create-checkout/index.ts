@@ -1,17 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { brandedEmailHtml } from '../_shared/email-layout.ts'
 import { fetchCompanyBrand, resendFromHeader } from '../_shared/company.ts'
+import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { missingTokenError, readQuoteToken } from '../_shared/quote-token.ts'
+import { unexpectedError } from '../_shared/http.ts'
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-const json = (b: unknown, s = 200) =>
+const json = (req: Request, b: unknown, s = 200) =>
   new Response(JSON.stringify(b), {
     status: s,
-    headers: { ...cors, 'Content-Type': 'application/json' },
+    headers: { ...corsFor(req), 'Content-Type': 'application/json' },
   })
 
 type QuoteRow = {
@@ -41,7 +38,7 @@ function successUrl(token: string): string {
     'PUBLIC_QUOTE_SUCCESS_URL',
     'https://fieldquote-26446.bubbleapps.io/version-test/q-success',
   )
-  return `${base}?token=${encodeURIComponent(token)}`
+  return `${base}?token=${encodeURIComponent(token)}&kind=deposit`
 }
 
 async function loadActionableQuote(
@@ -153,6 +150,7 @@ async function createStripeCheckoutSession(
 }
 
 async function handleDecline(
+  req: Request,
   admin: ReturnType<typeof createClient>,
   quote: QuoteRow,
   declinedReason: string,
@@ -167,9 +165,9 @@ async function handleDecline(
     .select('id, status, declined_reason')
     .maybeSingle()
 
-  if (error) return json({ error: error.message }, 500)
+  if (error) return json(req, { error: error.message }, 500)
   if (!updated) {
-    return json({ error: 'Quote was already updated', actionable: false }, 409)
+    return json(req, { error: 'Quote was already updated', actionable: false }, 409)
   }
 
   // Quote is already declined — email failure must not surface as 500 to the customer.
@@ -238,7 +236,7 @@ async function handleDecline(
     console.error('decline admin notify failed:', emailErr)
   }
 
-  return json({ ok: true, status: 'declined', declined_reason: updated.declined_reason })
+  return json(req, { ok: true, status: 'declined', declined_reason: updated.declined_reason })
 }
 
 /**
@@ -247,17 +245,18 @@ async function handleDecline(
  * - decline → quotes.status=declined immediately
  */
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+  if (req.method === 'OPTIONS') return corsPreflight(req)
+  if (req.method !== 'POST') return json(req, { error: 'Method not allowed' }, 405)
 
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !serviceKey) {
-      return json({ error: 'Server misconfigured' }, 500)
+      return json(req, { error: 'Server misconfigured' }, 500)
     }
 
     const parsed = await readQuoteToken(req)
+    if (parsed.too_large) return json(req, { error: 'Payload too large' }, 413)
     const token = parsed.token
     const action = typeof parsed.body.action === 'string'
       ? parsed.body.action.trim().replace(/^["']+|["']+$/g, '').toLowerCase()
@@ -267,32 +266,32 @@ Deno.serve(async (req) => {
       : ''
 
     if (!token || token.length < 20) {
-      return json(missingTokenError(parsed), 400)
+      return json(req, missingTokenError(parsed), 400)
     }
     if (action !== 'accept' && action !== 'decline') {
-      return json({ error: 'action must be accept or decline' }, 400)
+      return json(req, { error: 'action must be accept or decline' }, 400)
     }
 
     const admin = createClient(supabaseUrl, serviceKey)
     const loaded = await loadActionableQuote(admin, token)
-    if (!loaded.ok) return json(loaded.body, loaded.status)
+    if (!loaded.ok) return json(req, loaded.body, loaded.status)
 
     if (action === 'decline') {
-      return await handleDecline(admin, loaded.quote, declinedReason)
+      return await handleDecline(req, admin, loaded.quote, declinedReason)
     }
 
     const stripeKey = Deno.env.get('STRIPE_SECRET_KEY')
     if (!stripeKey) {
-      return json({ error: 'Server misconfigured (STRIPE_SECRET_KEY)' }, 500)
+      return json(req, { error: 'Server misconfigured (STRIPE_SECRET_KEY)' }, 500)
     }
 
     const session = await createStripeCheckoutSession(loaded.quote, token, stripeKey)
     if ('error' in session) {
-      return json({ error: session.error }, 502)
+      return json(req, { error: session.error }, 502)
     }
 
-    return json({ checkout_url: session.checkout_url })
-  } catch (e) {
-    return json({ error: String(e) }, 500)
+    return json(req, { checkout_url: session.checkout_url })
+  } catch {
+    return unexpectedError(req)
   }
 })

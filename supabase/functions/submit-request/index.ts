@@ -1,14 +1,10 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { fetchSoleCompanyId } from '../_shared/company.ts'
+import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { assertRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts'
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-const json = (b: unknown, s = 200) =>
-  new Response(JSON.stringify(b), { status: s, headers: { ...cors, 'Content-Type': 'application/json' } })
+const json = (req: Request, b: unknown, s = 200) =>
+  new Response(JSON.stringify(b), { status: s, headers: { ...corsFor(req), 'Content-Type': 'application/json' } })
 
 type MediaKind = 'photo' | 'audio'
 
@@ -94,18 +90,17 @@ function hasLetter(s: string): boolean {
   return /[a-zA-Z]/.test(s)
 }
 
-const IP_LIMIT = 5
-const EMAIL_LIMIT = 3
-const WINDOW_MS = 10 * 60 * 1000
+const EMAIL_LIMIT_PER_DAY = 3
+const DAY_MS = 24 * 60 * 60 * 1000
 const MAX_BODY_BYTES = 32 * 1024
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+  if (req.method === 'OPTIONS') return corsPreflight(req)
+  if (req.method !== 'POST') return json(req, { error: 'Method not allowed' }, 405)
 
   try {
     const raw = await req.text()
-    if (raw.length > MAX_BODY_BYTES) return json({ error: 'Request too large' }, 413)
+    if (raw.length > MAX_BODY_BYTES) return json(req, { error: 'Request too large' }, 413)
 
     const body = (raw ? JSON.parse(raw) : {}) as Record<string, unknown>
     const customer_name = asTrimmed(body.customer_name)
@@ -117,61 +112,53 @@ Deno.serve(async (req) => {
 
     const honeypot = body.honeypot ?? body.hp
     if (typeof honeypot === 'string' ? honeypot.trim() : honeypot) {
-      return json({ success: true }, 200)
+      return json(req, { success: true }, 200)
     }
 
     const mediaItems = parseMediaFromBody(body)
     const desc = description
 
     if (!customer_name || customer_name.length < 2 || customer_name.length > 80 || !hasLetter(customer_name)) {
-      return json({ error: 'Enter a valid name' }, 400)
+      return json(req, { error: 'Enter a valid name' }, 400)
     }
     if (!isEmail(customer_email)) {
-      return json({ error: 'Enter a valid email' }, 400)
+      return json(req, { error: 'Enter a valid email' }, 400)
     }
     if (customer_phone.length > 40) {
-      return json({ error: 'Phone is too long' }, 400)
+      return json(req, { error: 'Phone is too long' }, 400)
     }
     if (!customer_address || customer_address.length < 8 || customer_address.length > 200) {
-      return json({ error: 'Enter a valid address' }, 400)
+      return json(req, { error: 'Enter a valid address' }, 400)
     }
     if (!desc && mediaItems.length === 0) {
-      return json({ error: 'Please provide a description, photo, or audio recording' }, 400)
+      return json(req, { error: 'Please provide a description, photo, or audio recording' }, 400)
     }
     if (desc && desc.length < 20 && mediaItems.length === 0) {
-      return json({ error: 'Please describe the job in a bit more detail' }, 400)
+      return json(req, { error: 'Please describe the job in a bit more detail' }, 400)
     }
     if (desc.length > 4000) {
-      return json({ error: 'Description is too long' }, 400)
+      return json(req, { error: 'Description is too long' }, 400)
     }
 
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !serviceRoleKey) {
-      return json({ error: 'Server misconfigured' }, 500)
+      return json(req, { error: 'Server misconfigured' }, 500)
     }
     const supabase = createClient(supabaseUrl, serviceRoleKey)
 
-    const ipLimit = await assertRateLimit(supabase, {
-      req,
-      route: 'submit-request',
-      limit: IP_LIMIT,
-      windowMs: WINDOW_MS,
-    })
-    if (!ipLimit.allowed) return rateLimitResponse(cors, ipLimit.retryAfterSec)
-
     const emailLimit = await assertRateLimit(supabase, {
       req,
-      route: 'submit-request-email',
-      limit: EMAIL_LIMIT,
-      windowMs: WINDOW_MS,
+      route: 'submit-request-email-day',
+      limit: EMAIL_LIMIT_PER_DAY,
+      windowMs: DAY_MS,
       identity: customer_email,
     })
-    if (!emailLimit.allowed) return rateLimitResponse(cors, emailLimit.retryAfterSec)
+    if (!emailLimit.allowed) return rateLimitResponse(corsFor(req), emailLimit.retryAfterSec)
 
     const company = await fetchSoleCompanyId(supabase)
     if ('error' in company) {
-      return json({ error: company.error }, 500)
+      return json(req, { error: company.error }, 500)
     }
     const companyId = company.company_id
 
@@ -191,7 +178,7 @@ Deno.serve(async (req) => {
       .single()
 
     if (reqErr || !request) {
-      return json({ error: 'Failed to create request' }, 500)
+      return json(req, { error: 'Failed to create request' }, 500)
     }
 
     if (mediaItems.length > 0) {
@@ -204,19 +191,19 @@ Deno.serve(async (req) => {
       }))
       const { error: mediaErr } = await supabase.from('request_media').insert(mediaRows)
       if (mediaErr) {
-        return json({
+        return json(req, {
           error: 'Request created but media failed to save',
           request_id: request.id,
         }, 500)
       }
     }
 
-    return json({
+    return json(req, {
       success: true,
       request_id: request.id,
       media_count: mediaItems.length,
     }, 200)
   } catch {
-    return json({ error: 'Unexpected error' }, 500)
+    return json(req, { error: 'Unexpected error' }, 500)
   }
 })

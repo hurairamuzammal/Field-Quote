@@ -21,8 +21,11 @@
 `setup_complete` is a new column. Pending invite = `false`. After Set Password it stays `true` even if the admin later disables them.
 
 ```bash
-npx supabase db push --project-ref chqljfdmgdtsmbbwbdyv
-npx supabase functions deploy resend-invite invite-technician set-technician-active complete-password-setup --no-verify-jwt --project-ref chqljfdmgdtsmbbwbdyv
+npx supabase db push
+npx supabase functions deploy resend-invite --no-verify-jwt --project-ref chqljfdmgdtsmbbwbdyv
+npx supabase functions deploy invite-technician --no-verify-jwt --project-ref chqljfdmgdtsmbbwbdyv
+npx supabase functions deploy set-technician-active --no-verify-jwt --project-ref chqljfdmgdtsmbbwbdyv
+npx supabase functions deploy complete-password-setup --no-verify-jwt --project-ref chqljfdmgdtsmbbwbdyv
 ```
 
 `resend-invite` does **not** create a user. It sends a new invite only if `setup_complete` is false and they are not banned.
@@ -147,6 +150,8 @@ If `active` is missing from the item fields, add it to `select=` and **Re-initia
 - Condition: when Current cell’s **`setup_complete` is no** → visible  
   Do **not** use `active` is no — that is also true for disabled staff.
 
+4.6 Workflow **When Resend invite is clicked**
+
 | Step | Action | Values |
 |------|--------|--------|
 | 1 | Plugins → **Resend Invite** | `email` = Current cell’s `email:formatted as JSON-safe` · `access_token` = Current User’s `sb_access_token` |
@@ -154,16 +159,21 @@ If `active` is missing from the item fields, add it to `select=` and **Re-initia
 | 3 | Show **RE: Failure** | Only when Result of step 1’s `returned_an_error` is **yes** · heading `Couldn't resend` · description: if `status_code` is 409 → `Password already set or this technician is deactivated` · else Result of step 1’s `body.error` (not `body_raw_text`) |
 | 4 | Set state `s_techs_ts` | Only when step 1 succeeded · value = Current date/time:extract unix |
 
-Do **not** show Resend when `active` is yes. Those people use **Forgot password**.
+4.7 Buttons **Disable** / **Enable** (same row)  
+- **Disable** visible when `setup_complete` is **yes** and `active` is **yes**  
+- **Enable** visible when `setup_complete` is **yes** and `active` is **no**  
+- Pending rows (`setup_complete` no) show **Resend** only — Disable is refused by the API anyway
+
+Do **not** show Resend when `setup_complete` is yes. Working staff use **Forgot password**. Disabled staff use **Enable**.
 
 ---
 
 ## 5. Test
 
-- [ ] Pending tech (`active` no): Resend visible → click → email with new link → `password_setup` works  
-- [ ] After they set password: row shows Active, Resend **hidden**  
-- [ ] Clicking Resend on an already-active email (if you force the API) → 409  
-- [ ] Deactivated tech (`set-technician-active` false): 409, not a new invite  
+- [ ] Pending tech (`setup_complete` no): Resend visible, Disable hidden → click Resend → new link → `password_setup` works (even if `active` is yes)
+- [ ] After they set password: row shows Active, Resend **hidden**, Disable **visible**
+- [ ] Working tech (`setup_complete` yes, `active` yes): Resend hidden; forcing API → 409 “Use Forgot password”
+- [ ] Disabled tech (`setup_complete` yes, `active` no): Enable visible, Resend **hidden**; forcing Resend API → 409
 - [ ] Table still cache-busts on `s_techs_ts` after a new Invite  
 
 **Invite Technician** URL must stay  

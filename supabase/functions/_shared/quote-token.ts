@@ -7,6 +7,7 @@ export type TokenParse = {
   token_length: number
   body: Record<string, unknown>
   raw: string
+  too_large?: boolean
 }
 
 function stripQuotes(s: string): string {
@@ -38,6 +39,17 @@ export async function readQuoteToken(req: Request): Promise<TokenParse> {
 
   if (req.method !== 'GET') {
     raw = await req.text().catch(() => '')
+    if (raw.length > 256 * 1024) {
+      return {
+        token: '',
+        json_parsed: false,
+        source: 'none',
+        token_length: 0,
+        body: {},
+        raw: '',
+        too_large: true,
+      }
+    }
     if (raw.trim()) {
       try {
         const parsed = JSON.parse(raw)

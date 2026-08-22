@@ -27,6 +27,7 @@ Read in this order. Numbers are **learn-only**.
 | L04 | `04-fieldquote-edge-functions-guide.md` | Edge functions code walkthrough |
 | L05 | `05-cachebust-initialize-cheatsheet.md` | Cache-bust URL pattern (cheat sheet) |
 | L06 | `06-postgrest-embed-practice.md` | Nested `select=` / FK embeds (drills) |
+| L07 | `07-r2-presign-public-vs-private.md` | R2 bucket, presign, public vs private, email logos |
 
 ## Perform (`doc/MD-files/perform/`)
 
@@ -39,11 +40,13 @@ Build / “how I did it” order. Numbers are **perform-only** (not the same as 
 | P03 | `03-multi-image-upload-dictation-flow.md` | Intake photos / dictation |
 | P04 | `04-supabase-login-bad-json-debug-log.md` | Login JSON debug notes |
 | P05 | `05-request-inbox-ai-quote-send-guide.md` | Inbox → draft → send (full connector tables) |
+| P11 | `11-dynamic-company-branding-guide.md` | Company name + logo (R2, email, Bubble cache) |
+| P12 | `12-make-com-review-loop-guide.md` | Make.com: final pay → Form feedback email + Jobs Done sheet |
 | P06 | `06-sessionkeeper-cachebust-fix-guide.md` | SessionKeeper fix + cache-bust interim |
 | P07 | `07-realtime-cachebust-to-supabase-guide.md` | Cache-bust → true Realtime |
 | P08 | `08-quote-request-ai-patch-send-guide.md` | Request → AI → Patch/Save → Send |
 | P09 | `09-admin-assign-technician-guide.md` | Admin Payments + Jobs + Assign popup |
-| P10 | `10-resend-invite-technicians-table.md` | Resend invite when password not set |
+| P10 | `10-resend-invite-technicians-table.md` | Resend invite when `setup_complete` is no |
 
 ## Handoff / task memory
 
@@ -56,4 +59,4 @@ Build / “how I did it” order. Numbers are **perform-only** (not the same as 
 
 **Ignore:** `doc/MD-files/_archive/` (duplicate of P01).
 
-**Updated:** 2026-08-17 — P10 resend-invite on technicians table.
+**Updated:** 2026-08-21 — P12 Make.com review loop.
