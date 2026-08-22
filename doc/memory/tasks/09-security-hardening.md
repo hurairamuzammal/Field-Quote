@@ -1,17 +1,18 @@
 # Security hardening (improvement pass)
 
-**Status:** IN PROGRESS — items 2–5 in repo; item 1 is Dashboard (hosted)  
-**Guide:** this file + `FieldQuote.docx` §3.2 / §13; RLS in `supabase/migrations/20260729124500_rls_profiles_and_auth.sql`  
-**Last updated:** 2026-08-17  
+**Status:** BUBBLE PASS VERIFIED — code 1–9, 12–18 in repo; export `fieldquote-26446 (2).bubble` matches leftovers. **Next is `tasks/10`.** Redeploy functions if `resolve-quote-token` accepted-200 is not live yet.  
+**Last updated:** 2026-08-19  
 **Bubble export audited:** `fieldquote-26446 (2).bubble`
 
 ---
 
 ## Paste for new chat (5–10 lines)
-- Security items **2–5 coded** (not deployed until `db push` + function deploys). **Item 1** still Dashboard: disable hosted signups.
-- Next: **item 6** — wire `assertRateLimit` into submit-request, reset, r2 PUT, resolve-token, checkout, draft-quote, invite/resend.
-- Do not mix UX polish (snackbars, logo, sidebar).
-- Deploy: `npx supabase db push` then deploy `invite-technician`, `resend-invite`, `send-quote`, `set-technician-active` (`--no-verify-jwt` until item 13).
+- Security **code** 1–9, 12–18 in repo. **Bubble leftovers verified** in `fieldquote-26446 (2).bubble` (signups off per trainee; deactivate wired; Invite/`functions/v1` URLs; Get Technicians bust; login → `technician_dashboard`).
+- **`password_setup`:** one verify (invite **or** recovery, `type` from URL); Set Password + `complete-password-setup` use that JWT; delete Bubble mirror user. Cosmetic leftover: **"did not math"** on mismatch text.
+- **Next:** `tasks/10` technician Jobs UI. Page still has copied admin List Quotes / List Jobs / Get Quote — strip; bind **Get My Jobs** only.
+- Item **21** snackbars later. Item **11** = `tasks/07`. Item **20** idle logout = backlog.
+- Redeploy **`resolve-quote-token`** if q-success still stuck after pay (accepted must be HTTP 200).
+- Admin function deploys omit `--no-verify-jwt`. Public keep `verify_jwt = false`.
 
 ---
 
@@ -22,11 +23,37 @@ Staff cannot self-register or act before Set Password; public endpoints cannot b
 | Decision | Choice | Why |
 |----------|--------|-----|
 | How we work | One numbered item per chat | Each item is its own PR / Bubble change |
-| Rate limits | In **edge functions** (IP + optional email key), not Bubble | Bubble is UX; attackers skip the UI |
+| Rate limits | In **edge functions**, not Bubble | Bubble is UX; attackers skip the UI. See **Rate limit policy** below. |
 | Auth signups | Dashboard **off** + trigger ignores client `role` | Defense in depth |
 | Invite before password | `profiles.active = false` until password set | Login page already fails (no password); invite JWT must not |
 | CORS | Allowlist Bubble + landing origins, not `*` | Stops random sites from driving our functions in a browser |
 | `verify_jwt` | **true** on admin-only functions; **false** only on public (intake, token, webhook, reset, r2 PUT) | Gateway rejects junk before Deno runs (cost / DDoS) |
+
+## Rate limit policy (locked — 2026-08-18)
+
+429 body: `{ error: "Try again later.", code: "rate_limited" }` + `Retry-After` header.
+
+| Endpoint | Function | Limit | Notes |
+|----------|----------|-------|-------|
+| Forgot password | `request-password-reset` | **Email only — 3 / 24h** | No IP cap. Unknown email still `{ success: true }`. |
+| Index submit | `submit-request` | **Email only — 3 / 24h** | No IP cap. Honeypot silent 200 unchanged. |
+| Photo upload (PUT) | `r2-presign` | **60 / IP / 10 min** | One presign per file; form allows up to 5 photos (+ audio). Headroom for retries. |
+| Draft quote | `draft-quote` | **None** | Admin JWT + `requireActiveAdmin`. |
+| Invite technician | `invite-technician` | **None** | Admin action. |
+| Resend invite | `resend-invite` | **None** | Admin action. |
+| Send quote | `send-quote` | **None** | Already unlimited. |
+| Quote page load | `resolve-quote-token` | **None** | Customer refresh is normal. |
+| Accept / decline | `create-checkout` | **None** | Token validates customer; one action per quote. |
+
+**Deploy (when ready):**
+
+```bash
+npx supabase db push
+# Admin (JWT gateway ON — do not pass --no-verify-jwt):
+npx supabase functions deploy invite-technician resend-invite draft-quote send-quote set-technician-active complete-password-setup --project-ref chqljfdmgdtsmbbwbdyv
+# Public / mixed (JWT gateway OFF):
+npx supabase functions deploy request-password-reset submit-request r2-presign resolve-quote-token create-checkout stripe-webhook --no-verify-jwt --project-ref chqljfdmgdtsmbbwbdyv
+```
 
 ## Done
 - [x] Live anon RLS sweep (tables empty; quotes insert blocked)
@@ -37,39 +64,46 @@ Staff cannot self-register or act before Set Password; public endpoints cannot b
 - [x] Item 3b — activate on **any** password change if not banned (`20260817140000_…`) — GoTrue placeholder hash skipped the empty-password check
 - [x] `complete-password-setup` — Bubble calls this after Set Password so `active` flips even if the Auth trigger misses
 - [x] Item 4 — `set-technician-active` (ban + unassign future jobs); invite/resend/send require admin **and** `active`
-- [x] Item 5 — `rate_limit_hits` + `hit_rate_limit` RPC + `_shared/rate-limit.ts` (not wired yet)
+- [x] Item 6 — rate policy coded (see table above); **deploy later**
+- [x] Item 8 — CORS allowlist live (OPTIONS: Bubble origin echoed; `evil.example` gets no `*`; `stripe-webhook` still `*`)
+- [x] Item 9 — no `token_hash` in `email_log` inserts; migration `20260818120000_drop_email_log_token_hash.sql`
+- [x] Item 13 — `config.toml` `verify_jwt = true` on admin functions; false on public + `r2-presign` (GET still fail-fast without Bearer)
+- [x] Item 14 — POST (etc.) gates, 256 KiB JSON cap (`submit-request` 32 KiB; webhook 1 MiB), 500 body is `Unexpected error` only
+- [x] Item 16 — Bubble export has no `select=*`, no `quotes.token` / `ai_raw` on jobs/quotes calls (leftover: disable `bubble_synced` — item 15)
+- [x] Item 17 — `tests/rls/negative.sql` expanded (nested quotes, tech cannot PATCH assignment, inactive, anon)
+- [x] Item 18 — job status machine + `job_events` trigger + append-only (`20260818120100_…`)
 
 ## In progress / next
 Work **top to bottom**. Stop at the end of one item unless it is a 5-minute follow-on in the same area.
 
 ### A — Auth lock (do first — account takeover)
-1. Disable public signups in Supabase Dashboard (Authentication → Providers → Email → **Confirm signups / disable new signups**). Also: disable anonymous sign-in (already off); enable leaked-password protection if free-plan allows. *(local `config.toml` already `enable_signup = false` — hosted Dashboard still required)*
+1. ~~Disable public signups~~ **done (hosted Dashboard, trainee 2026-08-19)** — local `config.toml` already `enable_signup = false`.
 2. ~~Fix `handle_new_user`~~ **done in repo** — role only from `raw_app_meta_data.fieldquote_role`.
 3. ~~Invite lock~~ **done in repo** — `active = false` until password; invite JWT cannot pass `auth_role()`.
-4. ~~Admin deactivate~~ **done in repo** — `set-technician-active`; Bubble toggle still to wire (checklist).
+4. ~~Admin deactivate~~ **done** — `set-technician-active` + Bubble **Set Technician Active** (Bearer = Current User JWT) on team table / tiles.
 
 ### B — Rate limits & cheap DDoS (public + expensive)
 5. ~~Shared limiter helper~~ **done in repo** (`_shared/rate-limit.ts` + `rate_limit_hits`). Wire in item 6.
-6. ~~Apply limiter~~ **submit-request** (5/10 min IP + 3/10 min email) and **r2-presign PUT** (15/10 min IP) wired. Still to wire: reset, token, checkout, draft, invite.
+6. ~~Apply limiter~~ **coded — deploy later** — see **Rate limit policy** table above.
 7. ~~`submit-request` validation~~ **done** — email/name/address required; **phone optional** (no format check); min description; honeypot silent 200.
-8. CORS: replace `Access-Control-Allow-Origin: *` with allowlist (`*.bubbleapps.io`, landing origin). OPTIONS must echo the allowed origin.
+8. ~~CORS~~ **done in repo** — `_shared/cors.ts` echoes allowed Origin (Bubble + landing). Redeploy the 11 Bubble-facing functions. `stripe-webhook` stays `*`.
 
 ### C — Password reset / set password / Auth API
-9. `request-password-reset`: keep identical success for unknown emails; rate limit (item 6); do **not** put `token_hash` in `email_log` (schema drift — stop writing it; new migration drop column or restrict).
-10. `password_setup` (Bubble): Verify Invite/Recovery **only** with matching `type`; Set Password only with that session; min length; mismatch copy; after success go to `login` and **do not** leave a logged-in tech session from the invite JWT. Confirm `type=invite` vs `type=recovery` not mixed.
-11. Logged-in change password stays `tasks/07` — separate UI; still needs current JWT + password policy.
-12. GoTrue: confirm **min password length ≥ 8** (Dashboard). Optional: rate-limit `/auth/v1/token` via Supabase Auth settings / CAPTCHA if available on free plan.
+9. ~~`request-password-reset` / invite `token_hash`~~ **done in repo** — email URL only; column dropped if present. Unknown email still `{ success: true }`.
+10. ~~`password_setup`~~ **verified in `(2).bubble`** — **one** Verify Invite (condition invite **or** recovery; `type` from URL). Set Password + **Auth - Complete Password Setup** use that step’s `access_token`. Cosmetic: mismatch text still **"did not math"**; snackbar copy already “Passwords don't match”.
+11. Logged-in change password stays `tasks/07` — later; not this pass.
+12. ~~GoTrue min length~~ **set Dashboard + `config.toml` to 8** (was 6). Optional leftover: rate-limit `/auth/v1/token` / CAPTCHA if free plan allows.
 
 ### D — API routing / endpoint gateway
-13. `config.toml`: `verify_jwt = true` on **admin** functions (`invite-technician`, `resend-invite`, `draft-quote`, `send-quote`, `r2-presign` GET path still needs JWT — split PUT/GET or keep function false but **fail fast** if GET without Bearer). Keep `verify_jwt = false` on: `submit-request`, `resolve-quote-token`, `create-checkout`, `stripe-webhook`, `request-password-reset`, r2 **PUT**.
-14. Reject wrong methods (already some); cap JSON body size; no stack traces in 500 bodies.
-15. Bubble connectors: **Invite Technician** URL must be `https://chqljfdmgdtsmbbwbdyv.supabase.co/functions/v1/invite-technician` (not `[ref].functions.supabase.co`). Same for reset + r2 if still placeholders. **Patch Quote Line** fix `https:/` → `https://`. Delete/disable **Resend** connector and **Create Invite disabled** (`/rest/v1/invites`). Remove **bubble_synced** calls (column does not exist). Every data call: dynamic `Authorization: Bearer` + current JWT (never leftover Initialize token).
-16. PostgREST: keep explicit `select=` (no `*`); tech only `DB - Get Jobs` columns; never select `quotes.token` / `ai_raw` on customer-facing calls.
+13. ~~`config.toml` verify_jwt~~ **done in repo** — admin functions `true`; public + `r2-presign` `false` (GET path still requires Bearer in Deno).
+14. ~~Method / body size / no stack traces~~ **done in repo** (`_shared/http.ts`).
+15. ~~Bubble connectors~~ **verified `(2).bubble`** — Invite/reset/r2/checkout are `https://chqljfdmgdtsmbbwbdyv.supabase.co/functions/v1/...`. No `functions.supabase.co`. No `/rest/v1/invites`. No `select=*`. No `token` / `ai_raw` on jobs/quotes URLs. Workflows: **0 hardcoded JWTs**. Unused **Send Email test** (Resend) still in connector list — not called. Login still branches on `_api_c2_bubble_synced` (GoTrue body field, **not** a DB column) for Bubble User LogIn vs SignUp — leave it. Get Technicians has `email=neq.[bust]`.
+16. ~~PostgREST `select=`~~ **audited** — no `select=*`; tech jobs calls are explicit columns (`DB - Get My Jobs` / `Get Job Detail` in `tasks/10`). No `token` / `ai_raw` on those URLs.
 
 ### E — RLS / DB machines / leftover product security
-17. Expand `tests/rls/negative.sql`: quotes/payments/price book/settings/other jobs (existing); plus `active = false` sees nothing; nested `jobs?select=quotes(total,token)` empty; tech cannot PATCH `technician_id`/`scheduled_at`; anon signup/profile not admin. Re-run after every migration.
-18. Job status trigger (`unscheduled→scheduled→en_route→in_progress→completed`) + append `job_events`. Completion photo rule when tech UI is wired.
-19. Wire `technician_panel` to **DB - Get Jobs** only (no price embeds). Route guard if token empty.
+17. ~~Expand `tests/rls/negative.sql`~~ **done in repo** — re-run after `db push`.
+18. ~~Job status trigger + `job_events`~~ **done in repo**. Completion photo rule when tech UI is wired.
+19. Login → **`technician_dashboard`** **done**. Remaining UI (strip admin leftovers, bind Get My Jobs / Get Job Detail, status + photos) = **`tasks/10`**, not this pass.
 20. SessionKeeper idle logout — already backlog #9; do after auth lock.
 
 ### F — Friendly error alerts (improvement, not raw JSON)
@@ -90,7 +124,9 @@ Work **top to bottom**. Stop at the end of one item unless it is a 5-minute foll
 | Rate limit table needs RLS | Service-role writes only inside functions after IP parse |
 | `verify_jwt = true` on public intake | Breaks honeypot page — do not |
 | Turning on JWT verify without Bubble sending `Authorization` | 401 empty lists — check header first |
-| Storing invite `token_hash` in `email_log` | Anyone with admin JWT can finish someone else’s invite |
+| Storing invite `token_hash` in `email_log` | **Fixed (item 9)** — stop writing it; drop column |
+| `q-success` stuck on “Confirming…” after pay | **Fixed in repo 2026-08-19** — `resolve-quote-token` returned **410** for `accepted`; Bubble poller has Include errors **OFF** so `_api_c2_status` never became `accepted`. Now **200** + `status: accepted`, `actionable: false`. Redeploy `resolve-quote-token`. |
+| `password_setup` click does nothing | Latest export **double-calls Verify Invite** (invite consumes token twice). Set Password / snackbars only look at **first** verify step — recovery never sets password. One verify per click; recovery must use `type=recovery`. |
 
 ## Files / migrations / functions
 | Kind | Path or name | Notes |
@@ -101,19 +137,35 @@ Work **top to bottom**. Stop at the end of one item unless it is a 5-minute foll
 | Helper | `supabase/functions/_shared/rate-limit.ts` | IP + route; wire in item 6 |
 | Function | `set-technician-active` | item 4 |
 | Functions | `invite-technician`, `resend-invite`, `send-quote` | app_metadata + requireActiveAdmin |
-| Config | `supabase/config.toml` `[functions.set-technician-active]` | verify_jwt still false until item 13 |
+| Config | `supabase/config.toml` | item 13 — admin `verify_jwt = true`; public false |
+| Helper | `supabase/functions/_shared/http.ts` | item 14 |
+| Migration | `20260818120000_drop_email_log_token_hash.sql` | item 9 |
+| Migration | `20260818120100_job_status_machine_and_events.sql` | item 18 |
 | Tests | `tests/rls/negative.sql` | item 17 |
 | Bubble | Invite URL, Patch Line URL, drop Resend/invites/bubble_synced | item 15 |
 | Dashboard | Auth: disable signups, password policy | items 1, 12 |
 
+## Remaining Bubble (you)
+
+**This pass is complete.** Next = **`tasks/10`**. Item 11 = `tasks/07` later. Item 21 snackbars later.
+
+### Item 10 — status
+**Verified `(2).bubble`:** one verify on button (invite **or** recovery); Set Password + complete-password-setup; delete Bubble user; go to login. Cosmetic: **T: Password Mismatch** still says **"did not math "**.
+
+### Item 19 — `tasks/10`
+Do **not** wire `technician_panel`. Login already lands on **`technician_dashboard`**. Still strip copied admin tables / Get Quote popup; bind **Get My Jobs** (no quote embeds). **Get Job Detail** URL still embeds `quotes(requests(...))` — do not use that call on the tech page until `select=` is snapshot-only.
+
 ## Bubble checklist
-- [ ] Invite Technician full URL + admin JWT
-- [ ] password_setup: type-safe verify → set password → login (no lingering invite session)
-- [ ] Deactivate technician toggle (item 4)
-- [ ] Remove Resend + `/rest/v1/invites` + `bubble_synced`
-- [ ] Patch Quote Line `https://`
-- [ ] Tech panel: Get Jobs only
-- [ ] All REST calls: Bearer = Current User token
+- [x] Dashboard: public signups **off** (item 1) — trainee
+- [ ] Deploy: confirm `db push` + function deploys including **`resolve-quote-token`**
+- [x] Invite Technician `functions/v1` URL + admin JWT
+- [ ] password_setup typo **"did not math"** (cosmetic)
+- [x] Deactivate technician → `set-technician-active`
+- [x] No `/rest/v1/invites`; Patch Quote Line `https://`
+- [x] Workflow Bearer = Current User token (no hardcoded JWT)
+- [x] Login: technician → **`technician_dashboard`**
+- [ ] 429 toasts — **later** (`tasks/03`)
+- [ ] Unused connector **Send Email test** (Resend) — disable when convenient
 
 ## Test plan
 - [ ] Signups disabled: `/auth/v1/signup` → signups not allowed (not merely invalid email)
@@ -121,8 +173,10 @@ Work **top to bottom**. Stop at the end of one item unless it is a 5-minute foll
 - [ ] Invitee password login fails until Set Password; invite JWT cannot read jobs/quotes
 - [ ] After Set Password, tech login works; `active = true`
 - [ ] Deactivated tech: login fails; leftover JWT gets empty RLS + 403 on admin functions
-- [ ] Burst `submit-request` / `request-password-reset` / r2 PUT → 429
+- [ ] Burst forgot / intake same email → 429 after 3 in 24h; unknown reset email still `{success:true}`
+- [ ] Burst r2 PUT from one IP → 429 after 60 in 10 min
+- [ ] Admin draft / invite / resend / quote accept — **never** 429 from our limiter
 - [ ] Reset unknown email still `{success:true}`; no user enumeration
 - [ ] Anon GET all tables still `[]`; nested quote prices as tech empty
 - [ ] `tests/rls/negative.sql` green after migrations
-```
+- [ ] Illegal job jump (e.g. unscheduled → completed) rejected; `job_events` row on legal change

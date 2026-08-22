@@ -1,6 +1,6 @@
 # Admin + public error / success alerts
 
-**Status:** NOT STARTED — **tomorrow queue item 21** (after Invite URL works, `tasks/09` §G)  
+**Status:** LATER — 429 + remaining toasts after `tasks/09` leftovers and tech UI (`tasks/10`)  
 **Guide:** reuse **RE: Alert Success** + **RE: Failure** (admin); page banners on login / password_setup / q / index  
 **Last updated:** 2026-08-16
 
@@ -36,7 +36,7 @@ Every mutating action (and login / set-password / public quote) shows a short su
 3. Admin: Price add/edit (duplicate name)
 4. Admin: Send quote (unpriced, already sent)
 5. Admin: Save line + Assign job
-6. Public: login, password_setup (mismatch typo “math”), forgot, q accept/decline, intake submit
+6. Public: login, password_setup (mismatch typo “math”), forgot **429**, q accept/decline, intake submit **429**
 
 ## Status → toast (all pages)
 | Condition | Toast text |
@@ -50,7 +50,7 @@ Every mutating action (and login / set-password / public quote) shows a short su
 | 409 + checkout decline | This quote was already updated |
 | 400 + needs_manual_pricing | Price every line before sending |
 | 400 + no line items | Add at least one line before sending |
-| 429 | Too many tries — wait a minute and try again |
+| 429 | Try again later. |
 | ≥ 500 | Server error — try again |
 | else | Something went wrong. Try again |
 | Edge `body.error` if mapped | Prefer the table above over raw `error` |
@@ -69,8 +69,8 @@ Every mutating action (and login / set-password / public quote) shows a short su
 | Deactivate tech | Technician deactivated | Couldn’t update |
 | Login | (navigate) | Invalid email or password |
 | Set password | Password saved — sign in | Passwords don’t match / link expired / too short |
-| Forgot password | If that email exists, we sent a link | (same success always — no enumeration) |
-| Intake submit | Request sent | Add a description or photo |
+| Forgot password | If that email exists, we sent a link | 429 → Try again later. (3 / email / day). Same success if unknown email |
+| Intake submit | Request sent | 429 → Try again later. (3 / email / day). Else add a description or photo |
 | q Accept | (redirect Stripe) | Quote no longer available |
 | q Decline | Quote declined | Quote no longer available |
 
@@ -95,8 +95,8 @@ Invite duplicate **Only when:** `status_code is 409` **or** Result’s `body.err
 - [ ] Failure + Success REs on admin
 - [ ] Invite 409 → “This technician is already invited.”
 - [ ] Draft / Price / Send / Assign / Save line
-- [ ] login + password_setup + q + index submit
-- [ ] 429 copy ready for rate limits (`tasks/09` B)
+- [ ] login + password_setup + **forgot 429** + q + **index 429**
+- [x] 429 copy: `Try again later.` (`body.error`, code `rate_limited`)
 
 ## Test plan
 - [ ] Invite same email twice → friendly already-invited, no JSON

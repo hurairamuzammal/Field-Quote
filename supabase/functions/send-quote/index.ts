@@ -1,16 +1,13 @@
 import { brandedEmailHtml } from '../_shared/email-layout.ts'
 import { resendFromHeader } from '../_shared/company.ts'
+import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { requireActiveAdmin } from '../_shared/require-admin.ts'
+import { readJsonBody, unexpectedError } from '../_shared/http.ts'
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-const json = (b: unknown, s = 200) =>
+const json = (req: Request, b: unknown, s = 200) =>
   new Response(JSON.stringify(b), {
     status: s,
-    headers: { ...cors, 'Content-Type': 'application/json' },
+    headers: { ...corsFor(req), 'Content-Type': 'application/json' },
   })
 
 const round2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
@@ -28,21 +25,23 @@ function quotePageUrl(token: string): string {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+  if (req.method === 'OPTIONS') return corsPreflight(req)
+  if (req.method !== 'POST') return json(req, { error: 'Method not allowed' }, 405)
 
   try {
-    const gate = await requireActiveAdmin(req, cors)
+    const gate = await requireActiveAdmin(req, corsFor(req))
     if (!gate.ok) return gate.response
     const { admin, companyId } = gate.caller
 
     const resendKey = Deno.env.get('RESEND_API_KEY')
     if (!resendKey) {
-      return json({ error: 'Server misconfigured (RESEND_API_KEY)' }, 500)
+      return json(req, { error: 'Server misconfigured (RESEND_API_KEY)' }, 500)
     }
-    const body = await req.json().catch(() => ({}))
+    const parsed = await readJsonBody<{ quote_id?: string }>(req)
+    if (!parsed.ok) return parsed.response
+    const body = parsed.value
     const quoteId = typeof body.quote_id === 'string' ? body.quote_id.trim() : ''
-    if (!quoteId) return json({ error: 'quote_id is required' }, 400)
+    if (!quoteId) return json(req, { error: 'quote_id is required' }, 400)
 
     const { data: quote, error: quoteError } = await admin
       .from('quotes')
@@ -53,15 +52,15 @@ Deno.serve(async (req) => {
       .eq('company_id', companyId)
       .maybeSingle()
 
-    if (quoteError) return json({ error: quoteError.message }, 500)
-    if (!quote) return json({ error: 'Quote not found' }, 404)
+    if (quoteError) return json(req, { error: quoteError.message }, 500)
+    if (!quote) return json(req, { error: 'Quote not found' }, 404)
     if (quote.status !== 'draft') {
       const alreadySent = quote.status === 'sent' ||
         quote.status === 'viewed' ||
         quote.status === 'accepted' ||
         quote.status === 'declined' ||
         quote.status === 'expired'
-      return json({
+      return json(req, {
         error: alreadySent
           ? 'Quote already sent'
           : 'Quote is not a draft',
@@ -78,12 +77,12 @@ Deno.serve(async (req) => {
       .eq('quote_id', quoteId)
       .order('created_at', { ascending: true })
 
-    if (linesError) return json({ error: linesError.message }, 500)
-    if (!lines?.length) return json({ error: 'Quote has no line items' }, 400)
+    if (linesError) return json(req, { error: linesError.message }, 500)
+    if (!lines?.length) return json(req, { error: 'Quote has no line items' }, 400)
 
     const unpriced = lines.filter((l) => l.unit_price == null)
     if (unpriced.length) {
-      return json({
+      return json(req, {
         error: 'Cannot send: one or more lines need manual pricing',
         unpriced_line_ids: unpriced.map((l) => l.id),
         needs_manual_pricing: true,
@@ -96,9 +95,9 @@ Deno.serve(async (req) => {
       .eq('id', quote.request_id)
       .maybeSingle()
 
-    if (requestError) return json({ error: requestError.message }, 500)
+    if (requestError) return json(req, { error: requestError.message }, 500)
     if (!requestRow?.customer_email) {
-      return json({ error: 'Request missing customer_email' }, 400)
+      return json(req, { error: 'Request missing customer_email' }, 400)
     }
 
     const { data: settings, error: settingsError } = await admin
@@ -107,8 +106,8 @@ Deno.serve(async (req) => {
       .eq('company_id', companyId)
       .maybeSingle()
 
-    if (settingsError) return json({ error: settingsError.message }, 500)
-    if (!settings) return json({ error: 'company_settings missing' }, 500)
+    if (settingsError) return json(req, { error: settingsError.message }, 500)
+    if (!settings) return json(req, { error: 'company_settings missing' }, 500)
 
     const taxPct = round2(Number(quote.tax_pct ?? settings.tax_pct))
     const depositPct = round2(Number(quote.deposit_pct ?? settings.deposit_pct))
@@ -145,9 +144,9 @@ Deno.serve(async (req) => {
       .select('id, status, token, valid_until, subtotal, tax_amount, total, deposit_amount')
       .maybeSingle()
 
-    if (updateError) return json({ error: updateError.message }, 500)
+    if (updateError) return json(req, { error: updateError.message }, 500)
     if (!updated) {
-      return json({ error: 'Quote was not draft anymore (concurrent send?)' }, 409)
+      return json(req, { error: 'Quote was not draft anymore (concurrent send?)' }, 409)
     }
 
     const link = quotePageUrl(token)
@@ -225,7 +224,7 @@ Deno.serve(async (req) => {
 
     if (!resendRes.ok) {
       // Quote is already sent in DB (token live). Surface email failure so admin can retry later.
-      return json({
+      return json(req, {
         ok: false,
         quote_id: quoteId,
         status: 'sent',
@@ -238,7 +237,7 @@ Deno.serve(async (req) => {
       }, 502)
     }
 
-    return json({
+    return json(req, {
       ok: true,
       quote_id: quoteId,
       status: 'sent',
@@ -250,8 +249,8 @@ Deno.serve(async (req) => {
       customer_email: requestRow.customer_email,
       totals: { subtotal, tax_amount: taxAmount, total, deposit_amount: depositAmount },
     })
-  } catch (e) {
-    return json({ error: String(e) }, 500)
+  } catch {
+    return unexpectedError(req)
   }
 })
 

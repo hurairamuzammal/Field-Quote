@@ -1,14 +1,11 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { corsFor, corsPreflight } from '../_shared/cors.ts'
+import { readJsonBody, unexpectedError } from '../_shared/http.ts'
 
-const cors = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-const json = (b: unknown, s = 200) =>
+const json = (req: Request, b: unknown, s = 200) =>
   new Response(JSON.stringify(b), {
     status: s,
-    headers: { ...cors, 'Content-Type': 'application/json' },
+    headers: { ...corsFor(req), 'Content-Type': 'application/json' },
   })
 
 const round2 = (n: number) => Math.round((Number(n) + Number.EPSILON) * 100) / 100
@@ -382,13 +379,13 @@ function applyGuardrail(parsed: ModelDraft, bookById: Map<string, BookItem>) {
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
-  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+  if (req.method === 'OPTIONS') return corsPreflight(req)
+  if (req.method !== 'POST') return json(req, { error: 'Method not allowed' }, 405)
 
   try {
     const authHeader = normalizeBearer(req)
     if (!authHeader) {
-      return json({
+      return json(req, {
         error: 'Missing Authorization Bearer token',
         hint: 'Authorization: Bearer <admin access_token>',
       }, 401)
@@ -404,7 +401,7 @@ Deno.serve(async (req) => {
     const openRouterModel = Deno.env.get('OPENROUTER_MODEL') ?? DEFAULT_OPENROUTER_MODEL
 
     if (!zaiKey && !openRouterKey) {
-      return json({
+      return json(req, {
         error: 'No AI key configured',
         hint: 'Set ZAI_API_KEY (primary, Z.AI GLM) and/or OPENROUTER_API_KEY (fallback)',
       }, 500)
@@ -416,7 +413,7 @@ Deno.serve(async (req) => {
     const admin = createClient(supabaseUrl, serviceKey)
 
     const { data: { user }, error: authError } = await userClient.auth.getUser()
-    if (authError || !user) return json({ error: 'Invalid session' }, 401)
+    if (authError || !user) return json(req, { error: 'Invalid session' }, 401)
 
     const { data: profile, error: profileError } = await admin
       .from('profiles')
@@ -425,12 +422,14 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     if (profileError || !profile || profile.role !== 'admin' || profile.active === false) {
-      return json({ error: 'Admin only' }, 403)
+      return json(req, { error: 'Admin only' }, 403)
     }
 
-    const body = await req.json().catch(() => ({}))
+    const parsedBody = await readJsonBody<{ request_id?: string; image_urls?: unknown }>(req)
+    if (!parsedBody.ok) return parsedBody.response
+    const body = parsedBody.value
     const requestId = typeof body.request_id === 'string' ? body.request_id.trim() : ''
-    if (!requestId) return json({ error: 'request_id is required' }, 400)
+    if (!requestId) return json(req, { error: 'request_id is required' }, 400)
 
     // Optional future: body.image_urls = ["https://…presigned…"] for vision
     const imageUrls = Array.isArray(body.image_urls)
@@ -447,14 +446,14 @@ Deno.serve(async (req) => {
       .eq('id', requestId)
       .maybeSingle()
 
-    if (requestError) return json({ error: requestError.message }, 500)
-    if (!requestRow) return json({ error: 'Request not found' }, 404)
+    if (requestError) return json(req, { error: requestError.message }, 500)
+    if (!requestRow) return json(req, { error: 'Request not found' }, 404)
     if (profile.company_id && requestRow.company_id !== profile.company_id) {
-      return json({ error: 'Request not in your company' }, 403)
+      return json(req, { error: 'Request not in your company' }, 403)
     }
     // Only brand-new requests get an AI draft. Quoted/archived must open the existing quote.
     if (requestRow.status !== 'new') {
-      return json({
+      return json(req, {
         error: requestRow.status === 'quoted'
           ? 'Request already quoted'
           : `Request status is ${requestRow.status}; only new requests can be drafted`,
@@ -472,9 +471,9 @@ Deno.serve(async (req) => {
       .order('category', { ascending: true })
       .order('name', { ascending: true })
 
-    if (bookError) return json({ error: bookError.message }, 500)
+    if (bookError) return json(req, { error: bookError.message }, 500)
     const book = (bookRows ?? []) as BookItem[]
-    if (!book.length) return json({ error: 'No active price book items' }, 400)
+    if (!book.length) return json(req, { error: 'No active price book items' }, 400)
 
     const bookById = new Map(book.map((b) => [b.id, b]))
 
@@ -501,8 +500,8 @@ Deno.serve(async (req) => {
       providerUsed = result.provider
       fallbackFrom = result.fallback_from
       zaiError = result.zai_error
-    } catch (e) {
-      return json({ error: 'AI draft failed', detail: String(e) }, 502)
+    } catch {
+      return json(req, { error: 'AI draft failed' }, 502)
     }
 
     const { lines: guardedLines, assumptions, clarifying_questions, confidence } = applyGuardrail(
@@ -527,8 +526,8 @@ Deno.serve(async (req) => {
       .eq('company_id', companyId)
       .maybeSingle()
 
-    if (settingsError) return json({ error: settingsError.message }, 500)
-    if (!settings) return json({ error: 'company_settings missing' }, 500)
+    if (settingsError) return json(req, { error: settingsError.message }, 500)
+    if (!settings) return json(req, { error: 'company_settings missing' }, 500)
 
     const depositPct = round2(Number(settings.deposit_pct))
     const taxPct = round2(Number(settings.tax_pct))
@@ -572,7 +571,7 @@ Deno.serve(async (req) => {
       .single()
 
     if (quoteError || !quote) {
-      return json({ error: quoteError?.message ?? 'Failed to insert quote' }, 500)
+      return json(req, { error: quoteError?.message ?? 'Failed to insert quote' }, 500)
     }
 
     const lineRows = lines.map((l) => ({
@@ -592,14 +591,14 @@ Deno.serve(async (req) => {
 
     if (linesError) {
       await admin.from('quotes').delete().eq('id', quote.id)
-      return json({ error: linesError.message }, 500)
+      return json(req, { error: linesError.message }, 500)
     }
 
     if (requestRow.status === 'new') {
       await admin.from('requests').update({ status: 'quoted' }).eq('id', requestId)
     }
 
-    return json({
+    return json(req, {
       quote_id: quote.id,
       line_items: insertedLines ?? [],
       assumptions,
@@ -617,7 +616,7 @@ Deno.serve(async (req) => {
       ai_fallback: Boolean(fallbackFrom),
       zai_error: zaiError ?? null,
     })
-  } catch (e) {
-    return json({ error: String(e) }, 500)
+  } catch {
+    return unexpectedError(req)
   }
 })

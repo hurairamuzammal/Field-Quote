@@ -36,10 +36,13 @@ Admin sees Payments (customer, amount, scheduled/not) + Jobs (tech name / None),
 2. Initialize List Payments + List Jobs / Get Technicians / Patch Job  
 3. Payments table (Assigned/Unassigned) + Jobs table + Assign popup  
 4. Hide/delete Unassigned-jobs table if already built  
+5. **Tomorrow:** Fix Assign / Assigned / Cancel visibility — do **not** key only on `status = scheduled`. Hide Assign when `technician_id` set **or** status in `scheduled|en_route|in_progress`. Show Cancel when not `completed`/`cancelled`. Wire `DB - Admin Cancel Job` if missing.  
+6. **Later (backlog 11b):** Assign popup loading shimmer while Get Job loads — see `tasks/12-loading-shimmer-q-assign.md` (also customer `q` page).  
 
 ## Blockers / pitfalls
 | Issue | Fix |
 |-------|-----|
+| Assign still shows after tech started | Condition only checked `scheduled`; include `en_route` / `in_progress` + `technician_id` |
 | No jobs to assign | Webhook never inserted — check `jobs` / `payments` |
 | Technicians dropdown empty | Admin JWT + active technicians; profiles admin-read policy |
 | PATCH 400 on date | ISO timestamptz + JSON-safe |

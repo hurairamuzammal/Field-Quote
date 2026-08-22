@@ -184,7 +184,7 @@ Shared HTML: `_shared/email-layout.ts` (invite, reset, send-quote).
 5. Branded email (`resent: true`)  
 6. `email_log` template `technician_invite_resend` (no `token_hash`)
 
-Bubble: **Resend invite** on the List Technicians row when `active` is no — `doc/MD-files/perform/10-resend-invite-technicians-table.md`.
+Bubble: **Resend invite** on the List Team row when `setup_complete` is no — `doc/MD-files/perform/10-resend-invite-technicians-table.md`.
 
 ---
 

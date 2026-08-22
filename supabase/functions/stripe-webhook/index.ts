@@ -67,6 +67,61 @@ type StripeSession = {
   metadata?: Record<string, string>
 }
 
+/** Fire-and-forget. Make failing must not roll back the payment (§9.3 / Day 20). */
+async function notifyMakeFinalPaid(
+  admin: SupabaseClient,
+  args: {
+    quoteId: string
+    jobId: string | null
+    companyId: string
+    requestId: string
+    amount: number
+    currency: string
+  },
+): Promise<void> {
+  const url = Deno.env.get('MAKE_WEBHOOK_URL')?.trim()
+  if (!url) {
+    console.error('MAKE_WEBHOOK_URL unset; skip review webhook for quote', args.quoteId)
+    return
+  }
+  try {
+    const { data: reqRow } = await admin
+      .from('requests')
+      .select('customer_name, customer_email')
+      .eq('id', args.requestId)
+      .maybeSingle()
+    const payload = {
+      event: 'job_final_paid',
+      quote_id: args.quoteId,
+      job_id: args.jobId,
+      company_id: args.companyId,
+      amount: args.amount,
+      currency: args.currency,
+      customer_name: reqRow?.customer_name ?? null,
+      customer_email: reqRow?.customer_email ?? null,
+    }
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    })
+    if (!res.ok) {
+      const body = await res.text().catch(() => '')
+      console.error(
+        'MAKE_WEBHOOK_URL HTTP',
+        res.status,
+        'quote',
+        args.quoteId,
+        body.slice(0, 200),
+      )
+    } else {
+      console.log('MAKE_WEBHOOK_URL ok quote', args.quoteId)
+    }
+  } catch (e) {
+    console.error('MAKE_WEBHOOK_URL failed (payment already recorded):', e)
+  }
+}
+
 function isUniqueViolation(err: { code?: string; message?: string } | null): boolean {
   if (!err) return false
   return err.code === '23505' || /duplicate key|unique/i.test(err.message ?? '')
@@ -287,18 +342,33 @@ async function handleCheckoutCompleted(
     status: payStatus,
   })
 
-  if (payError) {
-    if (isUniqueViolation(payError)) {
-      return json({ received: true, duplicate: true })
-    }
+  const duplicate = !!(payError && isUniqueViolation(payError))
+  if (payError && !duplicate) {
     return json({ error: payError.message }, 500)
   }
 
-  if (kind === 'deposit') {
+  // Final → Make even on Stripe replay/duplicate, so a missed review email can still fire.
+  // Deposit notify stays insert-only (emails already logged once).
+  if (kind === 'deposit' && !duplicate) {
     await notifyDepositPaid(admin, quote.id, companyId, quote.request_id, amount, currency)
+  } else if (kind === 'final') {
+    await notifyMakeFinalPaid(admin, {
+      quoteId: quote.id,
+      jobId,
+      companyId,
+      requestId: quote.request_id as string,
+      amount,
+      currency,
+    })
   }
 
-  return json({ received: true, kind, quote_id: quote.id, job_id: jobId })
+  return json({
+    received: true,
+    kind,
+    quote_id: quote.id,
+    job_id: jobId,
+    duplicate: duplicate || undefined,
+  })
 }
 
 /**
@@ -325,6 +395,7 @@ Deno.serve(async (req) => {
   }
 
   const raw = await req.text()
+  if (raw.length > 1024 * 1024) return json({ error: 'Payload too large' }, 413)
   const sig = req.headers.get('stripe-signature')
   const ok = await verifyStripeSignature(raw, sig, webhookSecret)
   if (!ok) return json({ error: 'Invalid signature' }, 400)
@@ -351,7 +422,7 @@ Deno.serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceKey)
   try {
     return await handleCheckoutCompleted(admin, eventId, session)
-  } catch (e) {
-    return json({ error: String(e) }, 500)
+  } catch {
+    return json({ error: 'Unexpected error' }, 500)
   }
 })

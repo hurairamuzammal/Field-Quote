@@ -1,11 +1,8 @@
 import { inviteEmailHtml } from '../_shared/email-layout.ts'
 import { fetchCompanyBrand, resendFromHeader } from '../_shared/company.ts'
+import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { requireActiveAdmin } from '../_shared/require-admin.ts'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+import { readJsonBody, rejectWrongMethod, unexpectedError } from '../_shared/http.ts'
 
 function passwordSetupBase(): string {
   return (
@@ -15,9 +12,12 @@ function passwordSetupBase(): string {
 }
 
 Deno.serve(async (req) => {
+  const corsHeaders = corsFor(req)
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders })
+    return corsPreflight(req)
   }
+  const wrong = rejectWrongMethod(req, ['POST'])
+  if (wrong) return wrong
 
   try {
     const gate = await requireActiveAdmin(req, corsHeaders)
@@ -34,7 +34,9 @@ Deno.serve(async (req) => {
     }
     const { brand } = brandRes
 
-    const { email, full_name } = await req.json()
+    const parsed = await readJsonBody<{ email?: string; full_name?: string }>(req)
+    if (!parsed.ok) return parsed.response
+    const { email, full_name } = parsed.value
     if (!email) {
       return new Response(JSON.stringify({ error: 'email is required' }), {
         status: 400,
@@ -118,7 +120,6 @@ Deno.serve(async (req) => {
       template: 'technician_invite',
       related_id: created.user.id,
       resend_id: resendData?.id ?? null,
-      token_hash: tokenHash,
       status: resendRes.ok ? 'sent' : 'failed',
     })
 
@@ -126,10 +127,7 @@ Deno.serve(async (req) => {
       status: 200,
       headers: corsHeaders,
     })
-  } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), {
-      status: 500,
-      headers: corsHeaders,
-    })
+  } catch {
+    return unexpectedError(req)
   }
 })
