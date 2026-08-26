@@ -42,7 +42,7 @@ Read `──<` as "one-to-many." The one flow to internalize: **request → quot
 ### 1.3 Table-by-table (with the *why*)
 
 **`profiles`** — staff only (customers never get accounts, §2).
-`id uuid PK` (mirrors `auth.users.id` — same person, same id in both), `company_id`, `role` (`'admin' | 'technician'` — a CHECK constraint, not free text), `full_name`, `email`, `phone`, `active bool`.
+`id uuid PK` (mirrors `auth.users.id` — same person, same id in both), `company_id`, `role` (`'admin' | 'technician'` — a CHECK constraint, not free text), `full_name`, `email`, `phone`, `active bool` (may log in), `setup_complete bool` (finished invite; stays true if later disabled).
 *Why `id` mirrors auth:* RLS policies compare row data against `auth.uid()` (the logged-in user's id from the JWT). Sharing the id makes that comparison a plain equality.
 
 **`company_settings`** — one row. `company_id`, `name`, `logo_key` (an R2 path string — files never live in the DB, §13 Rule 9), `deposit_pct`, `tax_pct`, `quote_validity_days`, `labor_rate`.
@@ -165,7 +165,7 @@ GET  /rest/v1/quotes?status=eq.sent&order=created_at.desc&select=id,total,custom
 POST /rest/v1/price_book_items          body: {...}          (header Prefer: return=representation to get the row back)
 PATCH /rest/v1/jobs?id=eq.<uuid>        body: {"status":"scheduled", ...}
 ```
-Filters are `column=op.value` (`eq`, `gt`, `in`, `ilike`); `select=` chooses columns **and** pulls related tables through FKs (that `customer:requests(...)` bit is a join — you'll use it constantly). Never `select=*` in production calls; list columns, so techs' calls physically can't request price fields.
+Filters are `column=op.value` (`eq`, `gt`, `in`, `ilike`); `select=` chooses columns **and** pulls related tables through FKs (that `customer:requests(...)` bit is a join — you'll use it constantly). Never `select=*` in production calls; list columns, so techs' calls physically can't request price fields. Practice: `doc/MD-files/learn/06-postgrest-embed-practice.md`.
 
 ### 3.4 Session keeping (the part tutorials skip)
 Access tokens die hourly. Build one reusable element, drop it on every protected page: on load → if `expires_at − now < 5 min` → call Refresh → store the new pair (Bubble custom states + localStorage via Toolbox is fine; that's legitimately "transient UI state" per §1.1) → refresh fails → clear + go to login. Without this, users get silently logged out mid-quote and blame your app.
@@ -227,11 +227,12 @@ Final invoice = same loop with kind:"final", amount = total − deposit,
 
 ### 5.1 Edge function boilerplate every function shares
 ```ts
-const cors = { 'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, content-type, apikey' };
+import { corsFor, corsPreflight } from '../_shared/cors.ts'
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+  if (req.method === 'OPTIONS') return corsPreflight(req);
+  const cors = corsFor(req) // echoes Origin if Bubble / landing; never *
   // ...handler...
+```
 });
 ```
 Forgetting the OPTIONS/CORS block is why "it works in curl but not in Bubble."
@@ -304,14 +305,23 @@ Rules that keep you sane: **never** edit schema in the dashboard editor (if you 
 | Supabase anon key | Bubble API Connector (private shared header) + landing page env | Bubble calls, realtime bridge, waitlist insert | — (public-by-design; RLS protects) |
 | Supabase service-role key | `supabase secrets set` | Edge functions only | Bubble, Git, browser, landing |
 | Supabase URL / project ref | Bubble connector, landing env | everything | fine anywhere |
-| `ANTHROPIC_API_KEY` (agency) | supabase secrets | draft-quote, followups, ops-assistant | Bubble, Git |
+| `ANTHROPIC_API_KEY` (agency) | supabase secrets | draft-quote (when switched), followups, ops-assistant | Bubble, Git |
+| `ZAI_API_KEY` (Z.AI GLM primary) | supabase secrets | draft-quote | Bubble, Git |
+| `ZAI_MODEL` (default `glm-4.6v-flash`) | supabase secrets | draft-quote | Bubble, Git |
+| `OPENROUTER_API_KEY` (fallback) | supabase secrets | draft-quote | Bubble, Git |
+| `OPENROUTER_MODEL` (e.g. `google/gemini-2.0-flash-001`) | supabase secrets | draft-quote | Bubble, Git |
 | `STRIPE_SECRET_KEY` (test) | supabase secrets | create-checkout, webhook | Bubble, Git |
 | `STRIPE_WEBHOOK_SECRET` | supabase secrets (from Stripe dashboard after registering the endpoint) | stripe-webhook | anywhere else |
 | Stripe publishable key | not needed (hosted Checkout via redirect URL) | — | — |
 | `RESEND_API_KEY` (agency domain) | supabase secrets | every mail-sending function | Bubble, Git |
+| `RESEND_FROM_EMAIL` (verified address) | supabase secrets | `from:` address; display name = `company_settings.name` | optional — defaults `dev@raftworks.co` |
+| `EMAIL_ASSET_BASE_URL` / `PUBLIC_LANDING_URL` (Vercel origin, public) | supabase secrets | branded email logo (`/logos/logo-email.png`) | optional — text wordmark if unset |
+| `BUBBLE_PASSWORD_SETUP_URL` | supabase secrets | invite + password-reset links | optional — defaults to Bubble test `password_setup` |
+| `PUBLIC_QUOTE_PAGE_URL` | supabase secrets | send-quote customer link | optional — defaults to Bubble test `q` |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET` / account id / bucket | supabase secrets | r2-presign | Bubble, Git |
+| `R2_PUBLIC_BASE_URL` (optional public origin, no trailing slash) | supabase secrets | `company-brand` UI + **all email logos** from `company_settings.logo_key` | required for DB logo in email (signed URLs expire in inboxes); unset → static `EMAIL_ASSET_BASE_URL` fallback / wordmark |
 | `MAKE_WEBHOOK_URL` | supabase secrets | stripe-webhook (final-payment branch) | Bubble (treat as secret — anyone with it can fire your scenario) |
-| `CRON_SECRET` (you invent it) | supabase secrets + the cron SQL | cron-called functions | Bubble |
+| `CRON_SECRET` (you invent it) | supabase secrets + `app.settings.cron_secret` GUC | cron-called functions + `send-final-invoice` | Bubble |
 | Vercel env (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) | Vercel dashboard → project → Environment Variables | landing waitlist form | Git |
 
 Bubble holds exactly **one** sensitive-ish value (the anon key) and it's the one designed to be exposed. If you ever feel the urge to paste any other key into Bubble, that feature belongs in an edge function.

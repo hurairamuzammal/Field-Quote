@@ -1,108 +1,135 @@
-// Follow this setup guide to integrate the Deno language server with your editor:
-// https://deno.land/manual/getting_started/setup_your_environment
-// This enables autocomplete, go to definition, etc.
+import { inviteEmailHtml } from '../_shared/email-layout.ts'
+import { fetchCompanyBrand, resendFromHeader, resolveEmailLogoUrl } from '../_shared/company.ts'
+import { corsFor, corsPreflight } from '../_shared/cors.ts'
+import { requireActiveAdmin } from '../_shared/require-admin.ts'
+import { readJsonBody, unexpectedError } from '../_shared/http.ts'
 
-// Setup type definitions for built-in Supabase Runtime APIs
-import "@supabase/functions-js/edge-runtime.d.ts";
-import { withSupabase } from "@supabase/server";
+const json = (req: Request, b: unknown, s = 200) =>
+  new Response(JSON.stringify(b), {
+    status: s,
+    headers: { ...corsFor(req), 'Content-Type': 'application/json' },
+  })
 
-console.log("Hello from Functions!");
+function passwordSetupBase(): string {
+  return (
+    Deno.env.get('BUBBLE_PASSWORD_SETUP_URL') ??
+    'https://fieldquote-26446.bubbleapps.io/version-test/password_setup'
+  ).replace(/\/$/, '')
+}
 
-// This endpoint uses 'publishable' | 'secret' access, apiKey is required.
-// Use publishable for Client-facing, key-validated endpoints
-// Use secret for Server-to-server, internal calls
-export default {
-  fetch: withSupabase({ auth: ["publishable", "secret"] }, async (req, ctx) => {
-    // Called by another service with a secret key
-    // ctx.supabaseAdmin bypasses RLS — use for privileged operations
-    /*
-    if (ctx.authMode === "secret") {
-      const { user_id } = await req.json();
-      const { data } = await ctx.supabaseAdmin.auth.admin.getUserById(user_id);
-
-      return Response.json({
-        email: data?.user?.email,
-      });
-    }
-    */
-
-    const { name } = await req.json();
-
-    return Response.json({
-      message: `Hello ${name}!`,
-    });
-  }),
-};
-
-/* To invoke locally:
-
-  1. Run `supabase start` (see: https://supabase.com/docs/reference/cli/supabase-start)
-  2. Make an HTTP request:
-
-  curl -i --location --request POST 'http://127.0.0.1:54321/functions/v1/resend-invite' \
-    --header 'apiKey: sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH' \
-    --data '{"name":"Functions"}'
-
-*/
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+function isBanned(bannedUntil: string | null | undefined): boolean {
+  if (!bannedUntil) return false
+  const t = Date.parse(bannedUntil)
+  return Number.isFinite(t) && t > Date.now()
 }
 
 Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method === 'OPTIONS') return corsPreflight(req)
+  if (req.method !== 'POST') return json(req, { error: 'Method not allowed' }, 405)
 
   try {
-    const authHeader = req.headers.get('Authorization')
-    const userClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader! } } }
-    )
-    const { data: { user } } = await userClient.auth.getUser()
+    const gate = await requireActiveAdmin(req, corsFor(req))
+    if (!gate.ok) return gate.response
+    const { admin: adminClient, companyId } = gate.caller
 
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    )
-
-    const { data: caller } = await adminClient.from('profiles').select('role').eq('id', user!.id).single()
-    if (caller?.role !== 'admin') {
-      return new Response(JSON.stringify({ error: 'Admin access required' }), { status: 403, headers: corsHeaders })
+    const parsed = await readJsonBody<{ email?: string }>(req)
+    if (!parsed.ok) return parsed.response
+    const body = parsed.value
+    const email = typeof body.email === 'string'
+      ? body.email.trim().replace(/^["']+|["']+$/g, '').toLowerCase()
+      : ''
+    if (!email) return json(req, { error: 'email is required' }, 400)
+    if (!Deno.env.get('RESEND_API_KEY')) {
+      return json(req, { error: 'Server misconfigured (RESEND_API_KEY)' }, 500)
     }
 
-    const { email } = await req.json()
+    const { data: profile, error: profileError } = await adminClient
+      .from('profiles')
+      .select('id, role, active, setup_complete, full_name, email, company_id')
+      .eq('company_id', companyId)
+      .ilike('email', email)
+      .maybeSingle()
 
-    // Always generate a fresh token — the old stored one may already be spent
-    const { data: linkData } = await adminClient.auth.admin.generateLink({ type: 'invite', email })
-    const tokenHash = linkData.properties?.hashed_token
+    if (profileError) return json(req, { error: profileError.message }, 500)
+    if (!profile || profile.role !== 'technician') {
+      return json(req, { error: 'No technician with that email' }, 404)
+    }
+    // Pending = setup_complete false, even if active flipped early (GoTrue
+    // placeholder password / verify-without-Set-Password). Resend must still work.
+    if (profile.setup_complete === true) {
+      return json(req, {
+        error: profile.active === true
+          ? 'Password already set. Use Forgot password instead of Resend invite.'
+          : 'This technician is deactivated. Activate them instead of resending an invite.',
+      }, 409)
+    }
 
-    const setPasswordUrl = `https://fieldquote-26446.bubbleapps.io/version-33h6t/password_setup?token_hash=${tokenHash}&type=invite`
+    const { data: authData, error: authErr } = await adminClient.auth.admin.getUserById(profile.id)
+    if (authErr || !authData.user) return json(req, { error: 'Auth user not found' }, 404)
+    if (isBanned(authData.user.banned_until as string | undefined)) {
+      return json(req, {
+        error: 'This technician is deactivated. Activate them instead of resending an invite.',
+      }, 409)
+    }
+
+    const brandRes = await fetchCompanyBrand(adminClient, companyId)
+    if ('error' in brandRes) return json(req, { error: brandRes.error }, 500)
+
+    const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
+      type: 'invite',
+      email: profile.email,
+    })
+    if (linkError || !linkData?.properties?.hashed_token) {
+      return json(req, { error: linkError?.message ?? 'Could not create invite link' }, 500)
+    }
+    const tokenHash = linkData.properties.hashed_token
+    const setPasswordUrl = `${passwordSetupBase()}?token_hash=${tokenHash}&type=invite`
 
     const resendRes = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`, 'Content-Type': 'application/json' },
+      headers: {
+        Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({
-        from: 'RaftWorks <dev@raftworks.co>',
-        to: [email],
-        subject: "Your FieldQuote invite (resent)",
-        html: `<p>Set up your account: <a href="${setPasswordUrl}">click here</a>.</p>`,
+        from: resendFromHeader(brandRes.brand.name),
+        to: [profile.email],
+        subject: `Your ${brandRes.brand.name} invite (resent)`,
+        html: inviteEmailHtml({
+          setPasswordUrl,
+          resent: true,
+          fullName: profile.full_name || undefined,
+          companyName: brandRes.brand.name,
+          logoUrl: resolveEmailLogoUrl(brandRes.brand.logo_key),
+        }),
       }),
     })
-    const resendData = await resendRes.json()
+    const resendData = await resendRes.json().catch(() => ({})) as Record<string, unknown>
+    const resendMessage = typeof resendData.message === 'string'
+      ? resendData.message
+      : typeof (resendData.error as { message?: string } | undefined)?.message === 'string'
+        ? (resendData.error as { message: string }).message
+        : null
 
     await adminClient.from('email_log').insert({
-      to_email: email,
+      company_id: companyId,
+      to_email: profile.email,
       template: 'technician_invite_resend',
-      resend_id: resendData?.id ?? null,
+      related_id: profile.id,
+      resend_id: typeof resendData.id === 'string' ? resendData.id : null,
       status: resendRes.ok ? 'sent' : 'failed',
-      token_hash: tokenHash,
     })
 
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: corsHeaders })
-  } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: corsHeaders })
+    if (!resendRes.ok) {
+      return json(req, {
+        error: 'Invite link created but email failed to send',
+        resend_status: resendRes.status,
+        resend_message: resendMessage,
+      }, 502)
+    }
+
+    return json(req, { success: true, user_id: profile.id })
+  } catch {
+    return unexpectedError(req)
   }
 })
