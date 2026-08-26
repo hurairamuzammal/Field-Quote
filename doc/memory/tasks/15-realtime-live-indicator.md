@@ -1,8 +1,6 @@
 # Realtime “live” indicator (§8.3)
 
-**Status:** NOT STARTED  
-**Scope:** `doc/FieldQuote.docx` §8.3  
-**Guide:** `doc/MD-files/perform/07-realtime-cachebust-to-supabase-guide.md` (§4 live / `bubble_fn_live`)  
+**Status:** IN PROGRESS — see **`perform/13-week4-ui-polish-guide.md` §8**  
 **Last updated:** 2026-08-23
 
 ---

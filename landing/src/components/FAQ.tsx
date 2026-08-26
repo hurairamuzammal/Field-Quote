@@ -1,114 +1,114 @@
 'use client';
 
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 
+const ease = [0.16, 1, 0.3, 1] as const;
+const viewOnce = { once: true, margin: '-80px' as const };
+
 const faqs = [
   {
-    q: 'How accurate is the AI quoting?',
-    a: 'The AI strictly references your live price book — it never invents or estimates a price. Every line item maps to a real entry. Unmatched work is flagged for manual admin review before the quote is sent.'
+    q: 'What happens after I submit a request?',
+    a: 'Your description, contact details, preferred timing, and any uploaded media are grouped into one service request. The team reviews it, prepares the scope, and sends a private quote link when it is ready.',
   },
   {
-    q: 'Is my payment information secure?',
-    a: 'Absolutely. We never handle card details directly. All payments run through Stripe\'s PCI-compliant hosted checkout. Payment state changes only happen via signature-verified, idempotent webhooks — never from client-side code.'
+    q: 'Do I need to create an account?',
+    a: 'No. Customers use secure, tokenized links to review a quote and continue to payment. You do not need to remember a password or access a public customer database.',
   },
   {
-    q: 'How do customers access their quotes?',
-    a: 'Customers receive secure, tokenized links with 20+ character random hashes. These links are resolved server-side and automatically expire when a quote is declined or completed. No raw database IDs are ever exposed.'
+    q: 'Can I include photos or a voice note?',
+    a: 'Yes. The request flow supports job photos and voice input so you can show the issue and explain what is happening without fitting everything into a short text box.',
   },
   {
-    q: 'What certifications does your team hold?',
-    a: 'All technicians are NICEIC Approved Contractors and TrustMark Registered. Our operations are ISO 9001:2015 certified. Every team member is background-checked and continuously trained.'
+    q: 'When do I pay?',
+    a: 'If the quote requires a deposit, it is collected after you accept and before the job is scheduled. When the work is complete, a separate secure payment link is sent for any remaining balance.',
   },
   {
-    q: 'Can I integrate FieldQuote with my existing systems?',
-    a: 'FieldQuote is built on open standards — Supabase (PostgreSQL), Stripe, and Make.com webhooks. Our admin portal runs on Bubble with a clean API connector. Custom integrations are available for enterprise clients.'
+    q: 'How is the technician visit scheduled?',
+    a: 'A member of the service team assigns the technician and confirms the appointment window after the quote is accepted and the required deposit is paid.',
   },
   {
-    q: 'What does the free tier include?',
-    a: 'We operate entirely on free tiers — Supabase, Vercel, Make.com, and Cloudflare R2. You only pay Stripe\'s standard processing fees on actual transactions. No monthly subscription, no hidden costs.'
+    q: 'What do I receive when the work is finished?',
+    a: 'The job record includes completion notes and at least one completion photo. You also receive completion confirmation and a final-payment request when a balance remains.',
   },
   {
-    q: 'How fast are quotes typically generated?',
-    a: 'From the moment a customer submits their request, the AI draft is generated in under 30 seconds. Admin review and sending typically takes under 4 minutes. Customers often receive their quote before they\'ve finished their coffee.'
+    q: 'How are card details handled?',
+    a: 'Card entry happens on Stripe-hosted Checkout. FieldQuote does not collect or store card fields, and payment status is confirmed by Stripe before the workflow moves forward.',
   },
-  {
-    q: 'Do you handle follow-up communications?',
-    a: 'Yes, but responsibly. The system caps follow-up emails at 2 per quote and 2 per invoice. Every outbound email is logged to our email_log table. We never spam — the cap is enforced at the database level, not just in code.'
-  }
 ];
 
 export default function FAQ() {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  const reducedMotion = Boolean(useReducedMotion());
 
   return (
-    <section id="faq" className="section-pad-lg" style={{ background: 'var(--dark-green)', color: 'var(--text-light)' }}>
-      <div className="container">
-        <div className="section-label" style={{ color: 'var(--lime)' }}>FAQ</div>
-        <h2 className="section-heading">GOT QUESTIONS?</h2>
+    <section id="faq" className="faq section-pad-lg" aria-labelledby="faq-heading">
+      <div className="container faq-grid">
+        <motion.div
+          className="faq-heading"
+          initial={reducedMotion ? false : { opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={viewOnce}
+          transition={{ duration: 0.6, ease }}
+        >
+          <p className="section-label section-label--dark">Before you request</p>
+          <h2 id="faq-heading" className="section-heading">
+            Straight answers.
+          </h2>
+          <p>
+            The online workflow is designed to make the service clearer, not to hide
+            important details behind automation.
+          </p>
+        </motion.div>
 
-        <div style={{ maxWidth: '800px' }}>
+        <div className="faq-list">
           {faqs.map((faq, i) => {
             const isOpen = openIndex === i;
+            const questionId = `faq-question-${i}`;
+            const panelId = `faq-panel-${i}`;
+
             return (
               <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
+                className="faq-item"
+                key={faq.q}
+                initial={reducedMotion ? false : { opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.4, delay: i * 0.05 }}
-                style={{
-                  borderBottom: '1px solid var(--border-dark)',
+                viewport={viewOnce}
+                transition={{
+                  duration: 0.5,
+                  delay: reducedMotion ? 0 : i * 0.04,
+                  ease,
                 }}
               >
                 <button
+                  id={questionId}
+                  className="faq-question"
+                  type="button"
+                  aria-expanded={isOpen}
+                  aria-controls={panelId}
                   onClick={() => setOpenIndex(isOpen ? null : i)}
-                  style={{
-                    width: '100%',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '1.5rem 0',
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--text-light)',
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 700,
-                    fontSize: 'var(--text-large)',
-                    textAlign: 'left',
-                    cursor: 'pointer',
-                    gap: '1rem'
-                  }}
                 >
                   {faq.q}
-                  <motion.div
-                    animate={{ rotate: isOpen ? 180 : 0 }}
-                    transition={{ duration: 0.25 }}
-                    style={{ flexShrink: 0 }}
-                  >
-                    <ChevronDown size={22} color="var(--lime)" />
-                  </motion.div>
+                  <ChevronDown size={22} aria-hidden="true" />
                 </button>
 
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {isOpen && (
                     <motion.div
+                      id={panelId}
+                      className="faq-answer"
+                      role="region"
+                      aria-labelledby={questionId}
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-                      style={{ overflow: 'hidden' }}
+                      transition={{
+                        duration: reducedMotion ? 0 : 0.26,
+                        ease: [0.16, 1, 0.3, 1],
+                      }}
                     >
-                      <p style={{
-                        fontSize: 'var(--text-base)',
-                        lineHeight: 1.7,
-                        opacity: 0.75,
-                        paddingBottom: '1.5rem',
-                        maxWidth: '650px'
-                      }}>
-                        {faq.a}
-                      </p>
+                      <p>{faq.a}</p>
                     </motion.div>
                   )}
                 </AnimatePresence>

@@ -40,8 +40,12 @@ Build / “how I did it” order. Numbers are **perform-only** (not the same as 
 | P03 | `03-multi-image-upload-dictation-flow.md` | Intake photos / dictation |
 | P04 | `04-supabase-login-bad-json-debug-log.md` | Login JSON debug notes |
 | P05 | `05-request-inbox-ai-quote-send-guide.md` | Inbox → draft → send (full connector tables) |
-| P11 | `11-dynamic-company-branding-guide.md` | Company name + logo (R2, email, Bubble cache) |
+| P11 | `11-dynamic-company-branding-guide.md` | Company name + logo (R2, email); Bubble chrome → P16 |
+| P15 | `15-profile-password-branding-guide.md` | Profile name, reset-email password, Confirm Edit Price fix |
+| P16 | `16-public-company-brand-re-guide.md` | Public `company-brand` + `RE: Company Brand` (no JWT) |
 | P12 | `12-make-com-review-loop-guide.md` | Make.com: final pay → Form feedback email + Jobs Done sheet |
+| P13 | `13-week4-ui-polish-guide.md` | Week 4 Bubble UX polish (optional refinement) |
+| P14 | `14-pg-cron-automations-guide.md` | pg_cron quote follow-ups + daily reminders |
 | P06 | `06-sessionkeeper-cachebust-fix-guide.md` | SessionKeeper fix + cache-bust interim |
 | P07 | `07-realtime-cachebust-to-supabase-guide.md` | Cache-bust → true Realtime |
 | P08 | `08-quote-request-ai-patch-send-guide.md` | Request → AI → Patch/Save → Send |
@@ -59,4 +63,4 @@ Build / “how I did it” order. Numbers are **perform-only** (not the same as 
 
 **Ignore:** `doc/MD-files/_archive/` (duplicate of P01).
 
-**Updated:** 2026-08-21 — P12 Make.com review loop.
+**Updated:** 2026-08-24 — P15 profile + branding Bubble guide.

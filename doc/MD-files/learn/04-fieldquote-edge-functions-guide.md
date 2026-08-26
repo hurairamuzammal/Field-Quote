@@ -22,6 +22,7 @@ Read this with the matching `index.ts` open. Line numbers move; follow **section
 | `r2-presign` PUT | Public (intake upload) |
 | `r2-presign` GET | Admin JWT |
 | `invite-technician` / `resend-invite` | Admin JWT |
+| `company-brand` | Public (apikey only; name + logo URL, never rates) |
 | `request-password-reset` | Public (always looks like success) |
 | `draft-quote` / `send-quote` | Admin JWT |
 | `resolve-quote-token` | Public (secret token in body/query) |
@@ -204,6 +205,27 @@ Bubble: **Resend invite** on the List Team row when `setup_complete` is no — `
 4. Build `password_setup?token_hash=…&type=recovery`.
 5. Resend branded `passwordResetEmailHtml`.
 6. Log to `email_log` (`password_reset`).
+
+---
+
+# 5b. `company-brand`
+
+**File:** `supabase/functions/company-brand/index.ts`  
+**Does:** public company chrome (name + logo URL). **No JWT.**
+
+### Security
+- Gateway `verify_jwt = false`.
+- Service role only after IP rate limit (60 / min).
+- Selects `company_id, name, logo_key` only — **never** rates.
+- Signs R2 GET only for keys matching `companies/{uuid}/logo/…` from the DB, not from the client.
+
+### Flow
+1. GET only.
+2. Rate-limit by IP.
+3. `fetchSoleCompanyId` + `fetchCompanyBrand`.
+4. `logo_url` = `R2_PUBLIC_BASE_URL` + key, else signed GET (~24h), else `emailLogoUrl()`, else null.
+
+Bubble: Data call **FN - Get Company Brand** on reusable **RE: Company Brand** — `perform/16-public-company-brand-re-guide.md`.
 
 ---
 

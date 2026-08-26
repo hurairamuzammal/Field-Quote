@@ -9,14 +9,21 @@ const json = (req: Request, b: unknown, s = 200) =>
 
 const EXT_MIME: Record<string, string> = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', webp: 'image/webp',
+  svg: 'image/svg+xml',
   heic: 'image/heic', heif: 'image/heif',
   webm: 'audio/webm', m4a: 'audio/mp4', mp4: 'audio/mp4',
   mp3: 'audio/mpeg', wav: 'audio/wav', ogg: 'audio/ogg', aac: 'audio/aac',
 }
 
-const MAX_BYTES: Record<string, number> = { photo: 10 * 1024 ** 2, audio: 20 * 1024 ** 2 }
+const MAX_BYTES: Record<string, number> = {
+  photo: 10 * 1024 ** 2,
+  audio: 20 * 1024 ** 2,
+  logo: 10 * 1024 ** 2,
+}
 
 const ALLOWED_GET_PREFIXES = ['requests/photos/', 'requests/audio/'] as const
+const LOGO_GET_KEY = /^companies\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/logo\//i
+const LOGO_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'svg'])
 
 const r2 = new AwsClient({
   accessKeyId: Deno.env.get('R2_ACCESS_KEY_ID')!,
@@ -40,7 +47,7 @@ function normalizeBearer(req: Request): string | null {
 
 const JOB_KEY = /^jobs\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/photos\//i
 
-type Staff = { userId: string; role: string; active: boolean }
+type Staff = { userId: string; role: string; active: boolean; companyId: string | null }
 
 async function getStaff(req: Request): Promise<{ ok: true; staff: Staff; authHeader: string } | { ok: false; response: Response }> {
   const authHeader = normalizeBearer(req)
@@ -64,7 +71,7 @@ async function getStaff(req: Request): Promise<{ ok: true; staff: Staff; authHea
 
   const { data: profile, error: profileError } = await userClient
     .from('profiles')
-    .select('role, active')
+    .select('role, active, company_id')
     .eq('id', user.id)
     .maybeSingle()
 
@@ -75,7 +82,16 @@ async function getStaff(req: Request): Promise<{ ok: true; staff: Staff; authHea
     return { ok: false, response: json(req, { error: 'Not allowed' }, 403) }
   }
 
-  return { ok: true, staff: { userId: user.id, role: profile.role, active: profile.active }, authHeader }
+  return {
+    ok: true,
+    staff: {
+      userId: user.id,
+      role: profile.role,
+      active: profile.active,
+      companyId: (profile.company_id as string | null) ?? null,
+    },
+    authHeader,
+  }
 }
 
 async function requireAdmin(req: Request): Promise<Response | null> {
@@ -122,6 +138,9 @@ Deno.serve(async (req) => {
         if (!(await canAccessJob(jobMatch[1], staff.staff))) {
           return json(req, { error: 'key not allowed' }, 403)
         }
+      } else if (LOGO_GET_KEY.test(key)) {
+        const staff = await getStaff(req)
+        if (!staff.ok) return staff.response
       } else {
         const denied = await requireAdmin(req)
         if (denied) return denied
@@ -159,11 +178,24 @@ Deno.serve(async (req) => {
     if (!mime) return json(req, { error: 'Unsupported file type' }, 400)
 
     if (kind === 'photo' && !mime.startsWith('image/')) return json(req, { error: 'Expected an image' }, 400)
+    if (kind === 'logo') {
+      if (!LOGO_EXTS.has(ext) || !mime.startsWith('image/')) {
+        return json(req, { error: 'Logo must be jpg, png, webp, or svg' }, 400)
+      }
+    }
     if (kind === 'audio' && !mime.startsWith('audio/')) return json(req, { error: 'Expected audio' }, 400)
-    if (fileSize && fileSize > (MAX_BYTES[kind] ?? MAX_BYTES.photo)) return json(req, { error: 'File too large' }, 400)
+    if (fileSize && Number(fileSize) > (MAX_BYTES[String(kind)] ?? MAX_BYTES.photo)) {
+      return json(req, { error: 'File too large' }, 400)
+    }
 
     let objectKey: string
-    if (jobId) {
+    if (kind === 'logo') {
+      const staff = await getStaff(req)
+      if (!staff.ok) return staff.response
+      if (staff.staff.role !== 'admin') return json(req, { error: 'Admin only' }, 403)
+      if (!staff.staff.companyId) return json(req, { error: 'No company on profile' }, 400)
+      objectKey = `companies/${staff.staff.companyId}/logo/${crypto.randomUUID()}.${ext}`
+    } else if (jobId) {
       if (kind !== 'photo') return json(req, { error: 'Job uploads must be photos' }, 400)
       const staff = await getStaff(req)
       if (!staff.ok) return staff.response

@@ -4,6 +4,7 @@ import {
   fetchCompanyBrand,
   fetchSoleCompanyId,
   resendFromHeader,
+  resolveEmailLogoUrl,
 } from '../_shared/company.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { assertRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts'
@@ -67,9 +68,13 @@ Deno.serve(async (req) => {
     }
 
     let companyName = 'Your company'
+    let logoUrl: string | null = null
     if (companyId) {
       const brandRes = await fetchCompanyBrand(adminClient, companyId)
-      if (!('error' in brandRes)) companyName = brandRes.brand.name
+      if (!('error' in brandRes)) {
+        companyName = brandRes.brand.name
+        logoUrl = resolveEmailLogoUrl(brandRes.brand.logo_key)
+      }
     }
 
     const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
@@ -103,7 +108,7 @@ Deno.serve(async (req) => {
         from: resendFromHeader(companyName),
         to: [emailNorm],
         subject: `Reset your ${companyName} password`,
-        html: passwordResetEmailHtml({ resetUrl, companyName }),
+        html: passwordResetEmailHtml({ resetUrl, companyName, logoUrl }),
       }),
     })
     const resendData = await resendRes.json()

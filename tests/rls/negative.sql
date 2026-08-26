@@ -31,9 +31,27 @@ begin
   if (select count(*) from public.price_book_items) <> 0 then
     raise exception 'RLS failure: technician can read price book items';
   end if;
-  if (select count(*) from public.company_settings) <> 0 then
-    raise exception 'RLS failure: technician can read company settings';
+  if (select count(*) from public.company_settings) <> 1 then
+    raise exception 'RLS failure: technician should read the company settings row (brand)';
   end if;
+  update public.company_settings set name = name;
+  if found then
+    raise exception 'RLS failure: technician updated company_settings';
+  end if;
+
+  update public.profiles set full_name = full_name where id = auth.uid();
+  if not found then
+    raise exception 'RLS failure: technician cannot update own full_name';
+  end if;
+  begin
+    update public.profiles set role = 'admin' where id = auth.uid();
+    raise exception 'RLS failure: technician changed own role';
+  exception
+    when others then
+      if SQLERRM not like '%You may update only your display name%' then
+        raise;
+      end if;
+  end;
   if exists (select 1 from public.jobs where technician_id is distinct from auth.uid()) then
     raise exception 'RLS failure: technician can read another technician''s job';
   end if;
