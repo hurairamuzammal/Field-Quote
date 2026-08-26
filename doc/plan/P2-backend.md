@@ -319,6 +319,7 @@ Rules that keep you sane: **never** edit schema in the dashboard editor (if you 
 | `BUBBLE_PASSWORD_SETUP_URL` | supabase secrets | invite + password-reset links | optional — defaults to Bubble test `password_setup` |
 | `PUBLIC_QUOTE_PAGE_URL` | supabase secrets | send-quote customer link | optional — defaults to Bubble test `q` |
 | `R2_ACCESS_KEY_ID` / `R2_SECRET` / account id / bucket | supabase secrets | r2-presign | Bubble, Git |
+| `R2_PUBLIC_BASE_URL` (optional public origin, no trailing slash) | supabase secrets | `company-brand` UI + **all email logos** from `company_settings.logo_key` | required for DB logo in email (signed URLs expire in inboxes); unset → static `EMAIL_ASSET_BASE_URL` fallback / wordmark |
 | `MAKE_WEBHOOK_URL` | supabase secrets | stripe-webhook (final-payment branch) | Bubble (treat as secret — anyone with it can fire your scenario) |
 | `CRON_SECRET` (you invent it) | supabase secrets + `app.settings.cron_secret` GUC | cron-called functions + `send-final-invoice` | Bubble |
 | Vercel env (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) | Vercel dashboard → project → Environment Variables | landing waitlist form | Git |

@@ -5,7 +5,7 @@
  */
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { brandedEmailHtml } from '../_shared/email-layout.ts'
-import { fetchCompanyBrand, resendFromHeader } from '../_shared/company.ts'
+import { fetchCompanyBrand, resendFromHeader, resolveEmailLogoUrl } from '../_shared/company.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { assertRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts'
 import { readJsonBody, rejectWrongMethod, unexpectedError } from '../_shared/http.ts'
@@ -108,9 +108,11 @@ Deno.serve(async (req) => {
     if (!already && resendKey) {
       const brandRes = await fetchCompanyBrand(admin, COMPANY_ID)
       const companyName = 'error' in brandRes ? 'FieldQuote' : brandRes.brand.name
+      const logoUrl = 'error' in brandRes ? null : resolveEmailLogoUrl(brandRes.brand.logo_key)
 
       const html = brandedEmailHtml({
         companyName,
+        logoUrl,
         eyebrow: 'Waitlist',
         title: "You're on the list",
         paragraphs: [

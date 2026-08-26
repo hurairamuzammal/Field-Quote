@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { brandedEmailHtml } from '../_shared/email-layout.ts'
-import { fetchCompanyBrand, resendFromHeader } from '../_shared/company.ts'
+import { fetchCompanyBrand, resendFromHeader, resolveEmailLogoUrl } from '../_shared/company.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { readJsonBody, rejectWrongMethod, unexpectedError } from '../_shared/http.ts'
 
@@ -192,6 +192,7 @@ Deno.serve(async (req) => {
 
     const brandRes = await fetchCompanyBrand(admin, job.company_id)
     const companyName = 'error' in brandRes ? 'Your company' : brandRes.brand.name
+    const logoUrl = 'error' in brandRes ? null : resolveEmailLogoUrl(brandRes.brand.logo_key)
     const customerLabel = String(job.customer_name ?? 'there')
     const resendKey = Deno.env.get('RESEND_API_KEY')
     if (!resendKey) return json(req, { error: 'Server misconfigured' }, 500)
@@ -232,6 +233,7 @@ Deno.serve(async (req) => {
 
     const html = brandedEmailHtml({
       companyName,
+      logoUrl,
       eyebrow: 'Job complete',
       title: remaining < 0.5 ? 'Your job is complete' : 'Final invoice',
       paragraphs,

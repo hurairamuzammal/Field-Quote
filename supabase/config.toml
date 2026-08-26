@@ -498,3 +498,23 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/submit-waitlist/deno.json"
 entrypoint = "./functions/submit-waitlist/index.ts"
+
+# Public chrome (name + logo URL). No JWT; rates never returned.
+[functions.company-brand]
+enabled = true
+verify_jwt = false
+import_map = "./functions/company-brand/deno.json"
+entrypoint = "./functions/company-brand/index.ts"
+
+# pg_cron targets (§9.1–9.2). x-cron-secret or admin JWT inside Deno.
+[functions.quote-followups]
+enabled = true
+verify_jwt = false
+import_map = "./functions/quote-followups/deno.json"
+entrypoint = "./functions/quote-followups/index.ts"
+
+[functions.daily-reminders]
+enabled = true
+verify_jwt = false
+import_map = "./functions/daily-reminders/deno.json"
+entrypoint = "./functions/daily-reminders/index.ts"

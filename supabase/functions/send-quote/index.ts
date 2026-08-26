@@ -1,5 +1,5 @@
 import { brandedEmailHtml } from '../_shared/email-layout.ts'
-import { resendFromHeader } from '../_shared/company.ts'
+import { resendFromHeader, resolveEmailLogoUrl } from '../_shared/company.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { requireActiveAdmin } from '../_shared/require-admin.ts'
 import { readJsonBody, unexpectedError } from '../_shared/http.ts'
@@ -102,12 +102,15 @@ Deno.serve(async (req) => {
 
     const { data: settings, error: settingsError } = await admin
       .from('company_settings')
-      .select('name, deposit_pct, tax_pct, quote_validity_days')
+      .select('name, logo_key, deposit_pct, tax_pct, quote_validity_days')
       .eq('company_id', companyId)
       .maybeSingle()
 
     if (settingsError) return json(req, { error: settingsError.message }, 500)
     if (!settings) return json(req, { error: 'company_settings missing' }, 500)
+
+    const companyName = (settings.name && String(settings.name).trim()) || 'Your company'
+    const logoUrl = resolveEmailLogoUrl(settings.logo_key as string | null)
 
     const taxPct = round2(Number(quote.tax_pct ?? settings.tax_pct))
     const depositPct = round2(Number(quote.deposit_pct ?? settings.deposit_pct))
@@ -150,7 +153,6 @@ Deno.serve(async (req) => {
     }
 
     const link = quotePageUrl(token)
-    const companyName = (settings.name && String(settings.name).trim()) || 'Your company'
     const lineHtml = lines
       .map((l) => {
         const lineTotal = round2(Number(l.qty) * Number(l.unit_price))
@@ -185,6 +187,7 @@ Deno.serve(async (req) => {
 
     const html = brandedEmailHtml({
       companyName,
+      logoUrl,
       eyebrow: 'Quote',
       title: `Your quote from ${companyName}`,
       paragraphs: [

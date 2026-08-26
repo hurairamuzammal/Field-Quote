@@ -1,70 +1,88 @@
 'use client';
 
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, useReducedMotion } from 'framer-motion';
 import { useRef, useEffect, useState } from 'react';
 
 function Counter({ to, duration = 2.5 }: { to: number; duration?: number }) {
   const ref = useRef<HTMLSpanElement>(null);
   const inView = useInView(ref, { once: true });
+  const reducedMotion = Boolean(useReducedMotion());
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    if (!inView) return;
-    let start: number;
+    if (!inView || reducedMotion) return;
+
+    let start: number | undefined;
+    let frame = 0;
     const step = (ts: number) => {
-      if (!start) start = ts;
+      if (start === undefined) start = ts;
       const progress = Math.min((ts - start) / (duration * 1000), 1);
-      // Ease out quad
       const eased = 1 - (1 - progress) * (1 - progress);
       setCount(Math.floor(eased * to));
-      if (progress < 1) requestAnimationFrame(step);
+      if (progress < 1) frame = requestAnimationFrame(step);
     };
-    requestAnimationFrame(step);
-  }, [inView, to, duration]);
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [inView, to, duration, reducedMotion]);
 
-  return <span ref={ref}>{count.toLocaleString()}</span>;
+  return <span ref={ref}>{(reducedMotion ? to : count).toLocaleString()}</span>;
 }
 
 const stats = [
-  { value: 15400, label: 'Customers Served', suffix: '+' },
-  { value: 250, label: 'Trained Technicians', suffix: '' },
-  { value: 98, label: 'Satisfaction Rate', suffix: '%' },
-  { value: 4, label: 'Minute Avg. Quote', suffix: 'min' },
+  { value: 7, label: 'Journey steps', suffix: '' },
+  { value: 2, label: 'Payment stages', suffix: '' },
+  { value: 1, label: 'Completion photo required', suffix: '' },
+  { value: 20, label: 'Character private links', suffix: '+' },
 ];
 
+const motionEase = [0.16, 1, 0.3, 1] as const;
+
 export default function Stats() {
+  const reducedMotion = Boolean(useReducedMotion());
+
   return (
-    <section className="section-pad" style={{
-      background: 'var(--lime)',
-      color: '#000'
-    }}>
+    <section
+      className="section-pad"
+      style={{
+        background: 'var(--lime)',
+        color: '#000',
+      }}
+    >
       <div className="container">
         <div className="grid-2x2" style={{ textAlign: 'center', gap: '3rem' }}>
           {stats.map((stat, i) => (
             <motion.div
-              key={i}
-              initial={{ opacity: 0, scale: 0.8 }}
-              whileInView={{ opacity: 1, scale: 1 }}
+              key={stat.label}
+              initial={reducedMotion ? false : { opacity: 0, scale: 0.8 }}
+              whileInView={reducedMotion ? undefined : { opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: i * 0.1 }}
+              transition={{
+                duration: reducedMotion ? 0 : 0.5,
+                delay: reducedMotion ? 0 : i * 0.1,
+                ease: motionEase,
+              }}
             >
-              <div style={{
-                fontSize: 'clamp(3rem, 8vw, 5.5rem)',
-                fontFamily: 'var(--font-display)',
-                fontWeight: 800,
-                lineHeight: 1,
-                whiteSpace: 'nowrap',
-                color: '#000'
-              }}>
+              <div
+                style={{
+                  fontSize: 'clamp(3rem, 8vw, 5.5rem)',
+                  fontFamily: 'var(--font-display)',
+                  fontWeight: 800,
+                  lineHeight: 1,
+                  whiteSpace: 'nowrap',
+                  color: '#000',
+                }}
+              >
                 <Counter to={stat.value} />
                 <span style={{ fontSize: '0.5em', opacity: 0.7 }}>{stat.suffix}</span>
               </div>
-              <div style={{
-                fontSize: 'var(--text-base)',
-                marginTop: '0.5rem',
-                opacity: 0.85,
-                fontWeight: 600
-              }}>
+              <div
+                style={{
+                  fontSize: 'var(--text-base)',
+                  marginTop: '0.5rem',
+                  opacity: 0.85,
+                  fontWeight: 600,
+                }}
+              >
                 {stat.label}
               </div>
             </motion.div>

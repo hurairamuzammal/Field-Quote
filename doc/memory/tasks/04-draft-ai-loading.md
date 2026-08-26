@@ -1,7 +1,6 @@
 # Draft with AI — loading indicator
 
-**Status:** IN PROGRESS  
-**Guide:** (Bubble UX; pairs with `perform/08-quote-request-ai-patch-send-guide.md`)  
+**Status:** IN PROGRESS — see **`perform/13-week4-ui-polish-guide.md` §3**  
 **Last updated:** 2026-08-11
 
 ---

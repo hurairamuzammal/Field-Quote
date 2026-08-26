@@ -53,15 +53,20 @@ export type BrandedEmailArgs = {
   preheader?: string
   /** Company display name from company_settings (not hardcoded product string) */
   companyName?: string
+  /**
+   * Prefer `resolveEmailLogoUrl(company_settings.logo_key)` (R2_PUBLIC_BASE_URL + key).
+   * Falls back to static landing PNG, then text wordmark.
+   */
+  logoUrl?: string | null
 }
 
 /**
  * Table-based layout that works in Gmail / Outlook / Apple Mail.
- * Logo uses hosted PNG when EMAIL_ASSET_BASE_URL is set; otherwise a text wordmark.
+ * Logo: caller DB URL → EMAIL_ASSET_BASE_URL/logos/logo-email.png → text wordmark.
  */
 export function brandedEmailHtml(args: BrandedEmailArgs): string {
   const companyName = (args.companyName ?? 'Your company').trim() || 'Your company'
-  const logo = emailLogoUrl()
+  const logo = args.logoUrl || emailLogoUrl()
   const preheader = escapeHtml(args.preheader ?? args.title)
   const eyebrow = args.eyebrow ? escapeHtml(args.eyebrow) : escapeHtml(companyName)
   const title = escapeHtml(args.title)
@@ -170,12 +175,14 @@ export function inviteEmailHtml(opts: {
   fullName?: string
   resent?: boolean
   companyName: string
+  logoUrl?: string | null
 }): string {
   const company = opts.companyName.trim() || 'Your company'
   const name = opts.fullName?.trim()
   const greeting = name ? `Hi ${name},` : 'Hi,'
   return brandedEmailHtml({
     companyName: company,
+    logoUrl: opts.logoUrl,
     eyebrow: opts.resent ? 'Invite resent' : 'Technician invite',
     title: opts.resent
       ? `Your ${company} invite is ready again`
@@ -199,10 +206,12 @@ export function inviteEmailHtml(opts: {
 export function passwordResetEmailHtml(opts: {
   resetUrl: string
   companyName: string
+  logoUrl?: string | null
 }): string {
   const company = opts.companyName.trim() || 'Your company'
   return brandedEmailHtml({
     companyName: company,
+    logoUrl: opts.logoUrl,
     eyebrow: 'Security',
     title: `Reset your ${company} password`,
     paragraphs: [

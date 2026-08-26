@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { brandedEmailHtml } from '../_shared/email-layout.ts'
-import { fetchCompanyBrand, resendFromHeader } from '../_shared/company.ts'
+import { fetchCompanyBrand, resendFromHeader, resolveEmailLogoUrl } from '../_shared/company.ts'
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), {
@@ -176,6 +176,7 @@ async function notifyDepositPaid(
   try {
     const brandRes = await fetchCompanyBrand(admin, companyId)
     const companyName = 'error' in brandRes ? 'Your company' : brandRes.brand.name
+    const logoUrl = 'error' in brandRes ? null : resolveEmailLogoUrl(brandRes.brand.logo_key)
 
     const { data: requestRow } = await admin
       .from('requests')
@@ -200,6 +201,7 @@ async function notifyDepositPaid(
     if (requestRow?.customer_email) {
       const html = brandedEmailHtml({
         companyName,
+        logoUrl,
         eyebrow: 'Payment received',
         title: 'Your deposit is confirmed',
         paragraphs: [
@@ -236,6 +238,7 @@ async function notifyDepositPaid(
     if (adminEmails.length) {
       const html = brandedEmailHtml({
         companyName,
+        logoUrl,
         eyebrow: 'Deposit paid',
         title: 'A deposit was paid',
         paragraphs: [

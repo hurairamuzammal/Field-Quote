@@ -1,107 +1,80 @@
 'use client';
 
-import { motion } from 'framer-motion';
-import { Mic, Bot, UserCheck, CreditCard } from 'lucide-react';
-import { useState } from 'react';
-
-const steps = [
-  {
-    num: '01',
-    icon: Mic,
-    title: 'Describe Your Job',
-    desc: 'Type or dictate your electrical issue. Attach photos for clarity. Our system instantly captures the intent and categorises the work.'
-  },
-  {
-    num: '02',
-    icon: Bot,
-    title: 'AI Drafts the Quote',
-    desc: 'Claude drafts a quote from your live price book — it never invents a price. The admin receives it via email for rapid review and approval.'
-  },
-  {
-    num: '03',
-    icon: UserCheck,
-    title: 'Accept & Dispatch',
-    desc: 'You receive a secure, tokenized link to review and accept the quote. We dispatch the closest certified technician automatically.'
-  },
-  {
-    num: '04',
-    icon: CreditCard,
-    title: 'Pay & Receive Receipt',
-    desc: 'Job marked complete triggers Stripe checkout for secure split-deposit payment. Make.com issues an automated receipt instantly.'
-  }
-];
+import { useRef, useState } from 'react';
+import {
+  useMotionValueEvent,
+  useReducedMotion,
+  useScroll,
+} from 'framer-motion';
+import WorkflowVisual from './WorkflowVisual';
+import { WORKFLOW_STEPS } from './workflow-data';
 
 export default function Sequence() {
-  return (
-    <section id="how-it-works" className="section-pad-lg" style={{ background: 'var(--cream)' }}>
-      <div className="container">
-        <div className="section-label">The Process</div>
-        <h2 className="section-heading">HOW IT WORKS.</h2>
+  const sectionRef = useRef<HTMLElement>(null);
+  const [activeStep, setActiveStep] = useState(0);
+  const reducedMotion = Boolean(useReducedMotion());
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ['start center', 'end center'],
+  });
 
-        <div className="grid-2x2">
-          {steps.map((step, i) => (
-            <StepCard key={i} step={step} index={i} />
-          ))}
+  useMotionValueEvent(scrollYProgress, 'change', (latest) => {
+    const nextStep = Math.min(
+      WORKFLOW_STEPS.length - 1,
+      Math.max(0, Math.floor(latest * WORKFLOW_STEPS.length)),
+    );
+    setActiveStep((current) => (current === nextStep ? current : nextStep));
+  });
+
+  return (
+    <section
+      ref={sectionRef}
+      id="how-it-works"
+      className="workflow section-pad-lg"
+      aria-labelledby="workflow-heading"
+    >
+      <div className="container">
+        <div className="workflow-intro">
+          <div>
+            <p className="section-label">How it works</p>
+            <h2 id="workflow-heading" className="section-heading">
+              One request. One continuous journey.
+            </h2>
+          </div>
+          <p className="section-intro">
+            Every digital step moves the job toward a confirmed visit and documented
+            finish. Follow the request from first detail to completed electrical work.
+          </p>
+        </div>
+
+        <div className="workflow-grid">
+          <ol className="workflow-steps">
+            {WORKFLOW_STEPS.map((step, index) => (
+              <li
+                className="workflow-step"
+                data-active={activeStep === index}
+                key={step.number}
+              >
+                <div>
+                  <span className="workflow-step-number">{step.number}</span>
+                  <h3>{step.title}</h3>
+                  <p>{step.description}</p>
+                  <span className="workflow-step-note">{step.note}</span>
+                  <span className="workflow-mobile-status">{step.status}</span>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <div className="workflow-visual-wrap">
+            <WorkflowVisual
+              activeStep={activeStep}
+              progress={scrollYProgress}
+              reducedMotion={reducedMotion}
+            />
+          </div>
         </div>
       </div>
     </section>
-  );
-}
-
-function StepCard({ step, index }: { step: typeof steps[0]; index: number }) {
-  const [hoverPos, setHoverPos] = useState({ x: 0, y: 0 });
-  const [hovering, setHovering] = useState(false);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    setHoverPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
-  };
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 40 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true, margin: '-60px' }}
-      transition={{ duration: 0.5, delay: index * 0.12 }}
-      onMouseMove={handleMouseMove}
-      onMouseEnter={() => setHovering(true)}
-      onMouseLeave={() => setHovering(false)}
-      style={{
-        padding: '3.5rem 2.5rem',
-        border: '1px solid var(--border-light)',
-        borderRadius: 'var(--radius-lg)',
-        background: '#fff',
-        position: 'relative',
-        overflow: 'hidden'
-      }}
-    >
-      {/* Spotlight overlay */}
-      <div style={{
-        position: 'absolute',
-        inset: 0,
-        background: `radial-gradient(500px circle at ${hoverPos.x}px ${hoverPos.y}px, rgba(0,224,196,0.12), transparent 40%)`,
-        opacity: hovering ? 1 : 0,
-        transition: 'opacity 0.3s',
-        pointerEvents: 'none'
-      }} />
-
-      <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{
-          fontFamily: 'var(--font-marker)',
-          fontSize: '3.5rem',
-          color: 'var(--lime)',
-          lineHeight: 1,
-          marginBottom: '1rem',
-          opacity: 0.5
-        }}>
-          {step.num}
-        </div>
-
-        <step.icon size={28} strokeWidth={1.5} style={{ marginBottom: '1rem', color: 'var(--dark-green)' }} />
-
-        <h3 style={{ fontSize: 'var(--text-h3)', marginBottom: '0.8rem', color: 'var(--text-dark)' }}>{step.title}</h3>
-        <p style={{ fontSize: 'var(--text-base)', color: '#68736E', lineHeight: 1.6 }}>{step.desc}</p>
-      </div>
-    </motion.div>
   );
 }

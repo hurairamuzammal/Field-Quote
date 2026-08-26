@@ -1,8 +1,8 @@
 # Logged-in user — change password from UI
 
-**Status:** NOT STARTED (do later)  
-**Guide:** reuse `Auth - Set new user password` (`PUT /auth/v1/user`) already on `password_setup`  
-**Last updated:** 2026-08-13
+**Status:** DONE via `tasks/19` — profile uses **forgot-email** (`request-password-reset`), not in-session PUT  
+**Guide:** `perform/15` · story in `tasks/19`  
+**Last updated:** 2026-08-25
 
 ---
 

@@ -1,7 +1,16 @@
 'use client';
+
 import React, { useRef } from 'react';
 
-export default function HoverSpotlight({ children, className, style }: { children: React.ReactNode, className?: string, style?: React.CSSProperties }) {
+export default function HoverSpotlight({
+  children,
+  className,
+  style,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  style?: React.CSSProperties;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -17,7 +26,12 @@ export default function HoverSpotlight({ children, className, style }: { childre
   };
 
   return (
-    <div ref={containerRef} onMouseMove={handleMouseMove} className={className} style={style}>
+    <div
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+      className={className}
+      style={style}
+    >
       {children}
     </div>
   );

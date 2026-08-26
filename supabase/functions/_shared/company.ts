@@ -53,6 +53,22 @@ export async function fetchCompanyBrand(
   }
 }
 
+/**
+ * HTTPS URL for company logos from DB `logo_key`.
+ * Requires `R2_PUBLIC_BASE_URL` (stable public origin). Signed R2 URLs expire — do not use them in email.
+ */
+export function companyLogoPublicUrl(logoKey: string | null | undefined): string | null {
+  const base = (Deno.env.get('R2_PUBLIC_BASE_URL') ?? '').replace(/\/$/, '')
+  const key = String(logoKey ?? '').replace(/^\//, '').trim()
+  if (!base || !key) return null
+  return `${base}/${key}`
+}
+
+/** Email chrome: DB logo when public base is set; else null → layout falls back to static / wordmark. */
+export function resolveEmailLogoUrl(logoKey: string | null | undefined): string | null {
+  return companyLogoPublicUrl(logoKey)
+}
+
 /** Resend `from` header: display name from DB, address from env (verified domain). */
 export function resendFromHeader(companyName: string): string {
   const email = (Deno.env.get('RESEND_FROM_EMAIL') ?? 'dev@raftworks.co').trim()

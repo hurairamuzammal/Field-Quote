@@ -1,15 +1,15 @@
 import type { Metadata } from 'next';
-import { Inter, Outfit, Permanent_Marker } from 'next/font/google';
+import { Manrope, Outfit, Permanent_Marker } from 'next/font/google';
 import './globals.css';
 import Header from '@/components/Header';
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
+const manrope = Manrope({ subsets: ['latin'], variable: '--font-manrope' });
 const outfit = Outfit({ subsets: ['latin'], variable: '--font-outfit' });
 const marker = Permanent_Marker({ weight: '400', subsets: ['latin'], variable: '--font-marker' });
 
 export const metadata: Metadata = {
-  title: 'FieldQuote — Next-Gen Quoting for Electrical Teams',
-  description: 'AI-assisted quoting, automated invoicing, and real-time job tracking for independent electrical contractors. From first enquiry to paid invoice in minutes.',
+  title: 'FieldQuote — Electrical Work, Quoted and Scheduled Clearly',
+  description: 'Request electrical work, review a professionally prepared quote, pay securely, and receive clear updates through completion.',
 };
 
 export default function RootLayout({
@@ -19,7 +19,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.variable} ${outfit.variable} ${marker.variable}`}>
+      <body className={`${manrope.variable} ${outfit.variable} ${marker.variable}`}>
         <Header />
         {children}
       </body>

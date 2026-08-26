@@ -20,11 +20,13 @@
 ```
 Admin upload → r2-presign kind=logo (PUT) → R2
             → PATCH company_settings.logo_key (+ name)
-Page load   → Get Company Brand (name, logo_key, updated_at)
-            → GET presign logo → s_company_name, s_logo_url, s_brand_updated_at
-Headers     → bind those states only (no refetch)
+Page load   → FN - Get Company Brand (public, no JWT)
+            → RE: Company Brand states (s_company_name, s_logo_url)
+            → extra page images bind that RE (one fetch per page)
 Emails      → fetchCompanyBrand + public/presigned logo URL at send time
 ```
+
+Bubble chrome: `perform/16-public-company-brand-re-guide.md` (not JWT Get Brand).
 
 **Do not** build an edge function whose job is to “save the logo into Bubble.”
 

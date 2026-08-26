@@ -1,6 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { brandedEmailHtml } from '../_shared/email-layout.ts'
-import { fetchCompanyBrand, resendFromHeader } from '../_shared/company.ts'
+import { fetchCompanyBrand, resendFromHeader, resolveEmailLogoUrl } from '../_shared/company.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { missingTokenError, readQuoteToken } from '../_shared/quote-token.ts'
 import { unexpectedError } from '../_shared/http.ts'
@@ -182,6 +182,7 @@ async function handleDecline(
 
       const brandRes = await fetchCompanyBrand(admin, quote.company_id)
       const companyName = 'error' in brandRes ? 'Your company' : brandRes.brand.name
+      const logoUrl = 'error' in brandRes ? null : resolveEmailLogoUrl(brandRes.brand.logo_key)
 
       const { data: admins } = await admin
         .from('profiles')
@@ -198,6 +199,7 @@ async function handleDecline(
         const customerLabel = requestRow?.customer_name ?? requestRow?.customer_email ?? 'Customer'
         const html = brandedEmailHtml({
           companyName,
+          logoUrl,
           eyebrow: 'Quote declined',
           title: 'A customer declined a quote',
           paragraphs: [

@@ -1,5 +1,5 @@
 import { inviteEmailHtml } from '../_shared/email-layout.ts'
-import { fetchCompanyBrand, resendFromHeader } from '../_shared/company.ts'
+import { fetchCompanyBrand, resendFromHeader, resolveEmailLogoUrl } from '../_shared/company.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { requireActiveAdmin } from '../_shared/require-admin.ts'
 import { readJsonBody, rejectWrongMethod, unexpectedError } from '../_shared/http.ts'
@@ -109,6 +109,7 @@ Deno.serve(async (req) => {
           setPasswordUrl,
           fullName: typeof full_name === 'string' ? full_name : undefined,
           companyName: brand.name,
+          logoUrl: resolveEmailLogoUrl(brand.logo_key),
         }),
       }),
     })
