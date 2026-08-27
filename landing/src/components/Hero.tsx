@@ -3,6 +3,7 @@
 import { ArrowRight, Camera, CreditCard, UserRoundCheck } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { SITE_LINKS } from '@/lib/site';
+import CircuitBackdrop from './CircuitBackdrop';
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -11,6 +12,7 @@ export default function Hero() {
 
   return (
     <section className="hero" aria-labelledby="hero-heading">
+      <CircuitBackdrop />
       <div className="container hero-grid">
         <motion.div
           className="hero-copy"

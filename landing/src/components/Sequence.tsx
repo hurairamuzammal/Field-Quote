@@ -69,7 +69,6 @@ export default function Sequence() {
           <div className="workflow-visual-wrap">
             <WorkflowVisual
               activeStep={activeStep}
-              progress={scrollYProgress}
               reducedMotion={reducedMotion}
             />
           </div>

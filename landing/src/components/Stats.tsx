@@ -45,7 +45,7 @@ export default function Stats() {
       className="section-pad"
       style={{
         background: 'var(--lime)',
-        color: '#000',
+        color: 'var(--near-black)',
       }}
     >
       <div className="container">
@@ -69,7 +69,7 @@ export default function Stats() {
                   fontWeight: 800,
                   lineHeight: 1,
                   whiteSpace: 'nowrap',
-                  color: '#000',
+                  color: 'var(--near-black)',
                 }}
               >
                 <Counter to={stat.value} />

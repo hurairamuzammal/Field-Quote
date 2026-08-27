@@ -33,7 +33,7 @@ export default function About() {
   const reducedMotion = Boolean(useReducedMotion());
 
   return (
-    <section id="about" className="section-pad-lg" style={{ background: 'var(--cream)' }}>
+    <section id="about" className="section-pad-lg">
       <div className="container">
         <div className="section-label">The standard</div>
         <h2 className="section-heading">THE JOB STAYS ON RECORD.</h2>
@@ -67,7 +67,7 @@ export default function About() {
               className="glow-card"
               style={{
                 padding: '3.5rem 2.5rem',
-                border: '1px solid rgba(0,0,0,0.1)',
+                border: '1px solid rgba(11, 29, 44, 0.12)',
                 borderRadius: 'var(--radius-lg)',
                 background: 'var(--lime)',
                 color: 'var(--dark-green)',

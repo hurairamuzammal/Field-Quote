@@ -9,7 +9,7 @@ export default function Quality() {
   const reducedMotion = Boolean(useReducedMotion());
 
   return (
-    <section className="section-pad" style={{ background: 'var(--cream)' }}>
+    <section className="section-pad">
       <div className="container">
         <div className="grid-2x2">
           <motion.div
@@ -35,7 +35,7 @@ export default function Quality() {
             >
               REVIEWED QUOTES
             </h3>
-            <p style={{ fontSize: 'var(--text-base)', color: '#68736E', lineHeight: 1.6 }}>
+            <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-muted)', lineHeight: 1.6 }}>
               Every quote is drafted against your live price book, then reviewed before it goes out.
               Matched line items carry stored prices; unmatched work stays flagged until a human
               sets the scope. Customers see the agreed total — not a guess from the model.
@@ -51,16 +51,9 @@ export default function Quality() {
               delay: reducedMotion ? 0 : 0.15,
               ease: motionEase,
             }}
+            className="quality-panel-ink"
             style={{
-              background: 'rgba(11, 29, 44, 0.85)',
-              backdropFilter: 'blur(24px) saturate(180%)',
-              WebkitBackdropFilter: 'blur(24px) saturate(180%)',
               padding: '4rem 3rem',
-              borderRadius: 'var(--radius-lg)',
-              color: 'var(--text-light)',
-              border: '1px solid rgba(255,255,255,0.15)',
-              boxShadow:
-                '0 10px 40px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05)',
             }}
           >
             <ShieldCheck size={44} style={{ color: 'var(--lime)', marginBottom: '1.5rem' }} />
@@ -75,7 +68,7 @@ export default function Quality() {
             >
               DOCUMENTED CLOSE-OUT
             </h3>
-            <p style={{ fontSize: 'var(--text-base)', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6 }}>
+            <p style={{ fontSize: 'var(--text-base)', color: 'var(--text-muted-on-dark)', lineHeight: 1.6 }}>
               Jobs finish with completion notes and at least one on-site photo attached to the
               record. Deposit and final balance each run through Stripe-hosted Checkout, with
               payment status written back before the workflow advances.
