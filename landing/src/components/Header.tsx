@@ -5,21 +5,37 @@ import { ArrowUpRight, Menu, X } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import Logo from '@/components/Logo';
+import ThemeToggle from '@/components/ThemeToggle';
 import { SITE_LINKS } from '@/lib/site';
 
 const navLinks = [
-  { label: 'Services', href: '#services' },
-  { label: 'How it works', href: '#how-it-works' },
-  { label: 'On-site proof', href: '#proof' },
-  { label: 'Questions', href: '#faq' },
+  { label: 'Services', href: '#services', id: 'services' },
+  { label: 'How it works', href: '#how-it-works', id: 'how-it-works' },
+  { label: 'Waitlist', href: '#waitlist', id: 'waitlist' },
 ];
 
 const morphEase = [0.16, 1, 0.3, 1] as const;
+
+function pickActiveSection(sectionIds: string[]): string | null {
+  const marker = 140;
+  let active: string | null = null;
+
+  for (const id of sectionIds) {
+    const section = document.getElementById(id);
+    if (!section) continue;
+    if (section.getBoundingClientRect().top <= marker) {
+      active = id;
+    }
+  }
+
+  return active;
+}
 
 export default function Header() {
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
   const menuRef = useRef<HTMLElement>(null);
   const menuButtonRef = useRef<HTMLButtonElement>(null);
   const prefersReducedMotion = useReducedMotion();
@@ -27,6 +43,32 @@ export default function Header() {
   useMotionValueEvent(scrollY, 'change', (latest) => {
     setScrolled(latest > 50);
   });
+
+  useEffect(() => {
+    const sectionIds = navLinks.map((link) => link.id);
+
+    const syncActiveSection = () => {
+      setActiveSection(pickActiveSection(sectionIds));
+    };
+
+    syncActiveSection();
+    window.addEventListener('scroll', syncActiveSection, { passive: true });
+    window.addEventListener('hashchange', syncActiveSection);
+
+    return () => {
+      window.removeEventListener('scroll', syncActiveSection);
+      window.removeEventListener('hashchange', syncActiveSection);
+    };
+  }, []);
+
+  const handleNavClick = (
+    sectionId: string,
+    event: React.MouseEvent<HTMLAnchorElement>,
+  ) => {
+    setActiveSection(sectionId);
+    event.currentTarget.blur();
+    setMenuOpen(false);
+  };
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -42,6 +84,16 @@ export default function Header() {
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [menuOpen]);
+
+  const handleLogoClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    window.scrollTo({
+      top: 0,
+      behavior: prefersReducedMotion ? 'auto' : 'smooth',
+    });
+    setActiveSection(null);
+    setMenuOpen(false);
+  };
 
   const morphTransition = prefersReducedMotion
     ? 'none'
@@ -76,42 +128,35 @@ export default function Header() {
           width: scrolled ? 'min(92%, 1000px)' : '100%',
           padding: scrolled ? '10px 10px 10px 24px' : '20px clamp(1.5rem, 5vw, 4rem)',
           zIndex: 100,
-          background: scrolled
-            ? 'linear-gradient(135deg, rgba(255,255,255,0.4) 0%, rgba(255,255,255,0.1) 100%)'
-            : 'transparent',
-          backdropFilter: scrolled ? 'blur(24px) saturate(200%)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'blur(24px) saturate(200%)' : 'none',
-          border: scrolled ? '1px solid rgba(255,255,255,0.5)' : '1px solid transparent',
           borderRadius: scrolled ? 'var(--radius-pill)' : 0,
-          boxShadow: scrolled
-            ? '0 8px 32px 0 rgba(31, 38, 135, 0.07), inset 0 0 0 1px rgba(255,255,255,0.3)'
-            : 'none',
           transition: morphTransition,
         }}
       >
-        <Link className="site-logo-link" href="/" aria-label="FieldQuote home">
+        <Link
+          className="site-logo-link"
+          href="/"
+          aria-label="FieldQuote home — scroll to top"
+          onClick={handleLogoClick}
+        >
           <Logo color="var(--text-dark)" size={22} />
         </Link>
 
         <nav className="desktop-nav" aria-label="Primary navigation">
-          {navLinks.map((link) =>
-            prefersReducedMotion ? (
-              <a key={link.label} href={link.href}>
-                {link.label}
-              </a>
-            ) : (
-              <motion.a
-                key={link.label}
-                href={link.href}
-                whileHover={{ backgroundColor: 'rgba(0, 0, 0, 0.05)' }}
-              >
-                {link.label}
-              </motion.a>
-            ),
-          )}
+          {navLinks.map((link) => (
+            <a
+              key={link.label}
+              href={link.href}
+              data-active={activeSection === link.id}
+              aria-current={activeSection === link.id ? 'true' : undefined}
+              onClick={(event) => handleNavClick(link.id, event)}
+            >
+              {link.label}
+            </a>
+          ))}
         </nav>
 
         <div className="header-actions">
+          <ThemeToggle />
           <a className="header-login" href={SITE_LINKS.staffLogin}>
             Staff sign in
           </a>
@@ -143,7 +188,12 @@ export default function Header() {
           hidden={!menuOpen}
         >
           {navLinks.map((link) => (
-            <a key={link.label} href={link.href} onClick={() => setMenuOpen(false)}>
+            <a
+              key={link.label}
+              href={link.href}
+              data-active={activeSection === link.id}
+              onClick={(event) => handleNavClick(link.id, event)}
+            >
               {link.label}
             </a>
           ))}
