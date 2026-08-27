@@ -22,6 +22,7 @@ export default function Marquee() {
               {items.map((item) => (
                 <span className="service-ribbon-item" key={item}>
                   {item}
+                  <span className="service-ribbon-mark" aria-hidden="true" />
                 </span>
               ))}
             </div>

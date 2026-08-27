@@ -1,5 +1,6 @@
 'use client';
 
+import { HardHat, UserRound, UserRoundCheck, type LucideIcon } from 'lucide-react';
 import { motion, useReducedMotion } from 'framer-motion';
 
 const journeyMoments = [
@@ -28,13 +29,79 @@ const journeyMoments = [
 
 const motionEase = [0.16, 1, 0.3, 1] as const;
 
+const ROLE_ICONS: Record<string, LucideIcon> = {
+  Homeowner: UserRound,
+  'Property manager': UserRoundCheck,
+  Technician: HardHat,
+};
+
+function JourneyAvatar({
+  role,
+  size = 'standard',
+  index = 0,
+  reducedMotion,
+}: {
+  role: string;
+  size?: 'featured' | 'standard';
+  index?: number;
+  reducedMotion: boolean;
+}) {
+  const Icon = ROLE_ICONS[role] ?? UserRound;
+  const iconSize = size === 'featured' ? 28 : 20;
+
+  return (
+    <motion.div
+      className={
+        size === 'featured'
+          ? 'journey-avatar journey-avatar--featured'
+          : 'journey-avatar'
+      }
+      animate={
+        reducedMotion
+          ? undefined
+          : {
+              y: [0, -5, 0],
+              boxShadow:
+                size === 'featured'
+                  ? [
+                      '0 10px 28px rgba(11, 29, 44, 0.22)',
+                      '0 14px 34px rgba(0, 224, 196, 0.28)',
+                      '0 10px 28px rgba(11, 29, 44, 0.22)',
+                    ]
+                  : undefined,
+            }
+      }
+      transition={{
+        duration: 2.8,
+        repeat: Infinity,
+        ease: 'easeInOut',
+        delay: index * 0.35,
+      }}
+      aria-hidden="true"
+    >
+      <motion.span
+        className="journey-avatar-icon"
+        animate={reducedMotion ? undefined : { rotate: [0, -5, 5, 0] }}
+        transition={{
+          duration: 3.6,
+          repeat: Infinity,
+          ease: 'easeInOut',
+          delay: index * 0.35 + 0.4,
+        }}
+      >
+        <Icon size={iconSize} strokeWidth={2.2} aria-hidden="true" />
+      </motion.span>
+    </motion.div>
+  );
+}
+
 export default function Reviews() {
   const reducedMotion = Boolean(useReducedMotion());
   const featured = journeyMoments.find((moment) => moment.featured)!;
   const standard = journeyMoments.filter((moment) => !moment.featured);
 
   return (
-    <section className="section-pad-lg" style={{ background: 'var(--cream)' }}>
+    <section className="section-pad-lg">
       <div className="container">
         <div className="section-label">The journey</div>
         <h2 className="section-heading">WHAT THE STEPS FEEL LIKE.</h2>
@@ -69,7 +136,7 @@ export default function Reviews() {
                 style={{
                   fontFamily: 'var(--font-marker-face)',
                   fontSize: '6rem',
-                  color: 'var(--near-black)',
+                  color: 'var(--quote-mark)',
                   lineHeight: 0.5,
                   marginBottom: '2.5rem',
                   marginTop: '-1rem',
@@ -95,7 +162,7 @@ export default function Reviews() {
                 style={{
                   fontFamily: 'var(--font-marker-face)',
                   fontSize: '6rem',
-                  color: 'var(--near-black)',
+                  color: 'var(--quote-mark)',
                   lineHeight: 0.5,
                   textAlign: 'right',
                   marginBottom: '3rem',
@@ -105,27 +172,12 @@ export default function Reviews() {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginTop: 'auto' }}>
-                <div
-                  style={{
-                    width: '60px',
-                    height: '60px',
-                    borderRadius: '50%',
-                    background: 'var(--dark-green)',
-                    color: 'var(--lime)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontFamily: 'var(--font-display)',
-                    fontWeight: 800,
-                    fontSize: '0.72rem',
-                    letterSpacing: '0.04em',
-                    textTransform: 'uppercase',
-                    textAlign: 'center',
-                    padding: '0.35rem',
-                  }}
-                >
-                  {featured.stage}
-                </div>
+                <JourneyAvatar
+                  role={featured.role}
+                  size="featured"
+                  index={0}
+                  reducedMotion={reducedMotion}
+                />
                 <div>
                   <div
                     style={{
@@ -184,28 +236,11 @@ export default function Reviews() {
                     marginTop: 'auto',
                   }}
                 >
-                  <div
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '50%',
-                      background: 'var(--cream)',
-                      border: '1px solid var(--border-light)',
-                      color: 'var(--text-dark)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontFamily: 'var(--font-display)',
-                      fontWeight: 700,
-                      fontSize: '0.55rem',
-                      letterSpacing: '0.03em',
-                      textTransform: 'uppercase',
-                      textAlign: 'center',
-                      padding: '0.2rem',
-                    }}
-                  >
-                    {moment.stage.split(' ')[0]}
-                  </div>
+                  <JourneyAvatar
+                    role={moment.role}
+                    index={i + 1}
+                    reducedMotion={reducedMotion}
+                  />
                   <div>
                     <div
                       style={{

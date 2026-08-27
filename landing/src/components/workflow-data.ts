@@ -6,6 +6,42 @@ export type WorkflowStep = {
   status: string;
 };
 
+export type CircuitCardSide = 'left' | 'right' | 'below' | 'above';
+
+export type CircuitPoint = {
+  cx: number;
+  cy: number;
+  /** First side that fits keeps the card off the track at that node. */
+  place: CircuitCardSide[];
+};
+
+/** Seven nodes along the workflow circuit SVG — one per journey step. */
+export const WORKFLOW_CIRCUIT_POINTS: CircuitPoint[] = [
+  { cx: 35, cy: 112, place: ['right'] },
+  { cx: 35, cy: 220, place: ['below'] },
+  { cx: 175, cy: 220, place: ['below'] },
+  { cx: 310, cy: 132, place: ['below'] },
+  { cx: 455, cy: 132, place: ['below'] },
+  { cx: 585, cy: 318, place: ['left'] },
+  { cx: 585, cy: 506, place: ['left'] },
+];
+
+/** Single track visiting every circuit point (background + animated stroke). */
+export const WORKFLOW_CIRCUIT_PATH =
+  'M35 112 V220 H175 C215 220 215 132 255 132 H310 H455 C520 132 585 220 585 318 V506';
+
+/** One segment per step — wide invisible hit targets along the track between points. */
+export const WORKFLOW_CIRCUIT_SEGMENTS: string[] = [
+  'M35 112 V220',
+  'M35 220 H175',
+  'M175 220 C215 220 215 132 255 132 H310',
+  'M310 132 H455',
+  'M455 132 C520 132 585 220 585 318',
+  'M585 318 V506',
+];
+
+export const WORKFLOW_CIRCUIT_VIEWBOX = { width: 620, height: 620 };
+
 export const WORKFLOW_STEPS: WorkflowStep[] = [
   {
     number: '01',
