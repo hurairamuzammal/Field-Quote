@@ -19,13 +19,13 @@
   --glass-bg: rgba(255, 255, 255, 0.72);
   --glass-border: rgba(255, 255, 255, 0.5);
   --glass-inset: rgba(255, 255, 255, 0.3);
-  --header-scrolled-bg: rgba(255, 255, 255, 0.72);
-  --header-scrolled-border: 1px solid rgba(255, 255, 255, 0.5);
+  --header-scrolled-bg: rgba(255, 255, 255, 0.94);
+  --header-scrolled-border: 1px solid rgba(15, 25, 35, 0.08);
   --header-scrolled-shadow:
     0 12px 36px rgba(8, 15, 22, 0.12),
     0 2px 6px rgba(8, 15, 22, 0.04),
     inset 0 1px 0 rgba(255, 255, 255, 0.8);
-  --header-glass-filter: blur(24px) saturate(180%);
+  --header-glass-filter: blur(28px) saturate(160%);
   --circuit-stroke: #e4eaef;
   --circuit-stroke-strong: #d5dde5;
   --circuit-node: #d7dee6;
@@ -74,13 +74,13 @@ html[data-theme="dark"] {
   --glass-bg: rgba(14, 24, 36, 0.72);
   --glass-border: rgba(255, 255, 255, 0.14);
   --glass-inset: rgba(255, 255, 255, 0.08);
-  --header-scrolled-bg: rgba(12, 22, 34, 0.72);
-  --header-scrolled-border: 1px solid rgba(255, 255, 255, 0.18);
+  --header-scrolled-bg: rgba(10, 19, 28, 0.94);
+  --header-scrolled-border: 1px solid rgba(255, 255, 255, 0.12);
   --header-scrolled-shadow:
     0 16px 44px rgba(0, 0, 0, 0.45),
     0 2px 8px rgba(0, 0, 0, 0.2),
-    inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  --header-glass-filter: blur(24px) saturate(180%);
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  --header-glass-filter: blur(28px) saturate(160%);
   --circuit-stroke: #2a3a4a;
   --circuit-stroke-strong: #314557;
   --circuit-node: #3d5368;
@@ -380,10 +380,10 @@ html[data-theme="dark"] .glow-card::after {
 /* Header — Apple Liquid Glass system */
 .site-header[data-scrolled="true"] {
   isolation: isolate;
-  background: var(--header-scrolled-bg);
-  backdrop-filter: var(--header-glass-filter);
-  -webkit-backdrop-filter: var(--header-glass-filter);
-  border: var(--header-scrolled-border);
+  background: var(--paper);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid var(--border-light);
   box-shadow: var(--header-scrolled-shadow);
 }
 
@@ -419,19 +419,18 @@ html[data-theme="dark"] .glow-card::after {
   height: 100%;
 }
 
-main,
-.site-header {
+main {
   position: relative;
-  z-index: 1;
+  z-index: 0;
 }
 
 .site-header {
-  position: relative;
-  z-index: 100;
+  position: fixed;
+  z-index: 200;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.75rem;
   overflow: visible;
   background: transparent;
   border: 1px solid transparent;
@@ -517,7 +516,7 @@ main,
 .desktop-nav {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.15rem;
 }
 
 .desktop-nav a,
@@ -558,7 +557,8 @@ main,
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
+  gap: 0.5rem;
+  flex: 0 0 auto;
 }
 
 .header-login {
@@ -1807,6 +1807,150 @@ main,
   text-transform: uppercase;
 }
 
+/* Rate card — §11 pricing placeholder */
+.pricing {
+  background: var(--cream);
+}
+
+.pricing-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.72fr) minmax(420px, 1.08fr);
+  gap: clamp(3rem, 8vw, 8rem);
+  align-items: start;
+}
+
+.pricing-copy {
+  position: sticky;
+  top: 8rem;
+}
+
+.pricing-copy .section-heading {
+  margin-bottom: 1.5rem;
+}
+
+.pricing-copy p {
+  max-width: 36rem;
+  margin-bottom: 1.75rem;
+  color: var(--text-muted);
+  font-size: var(--text-large);
+  line-height: 1.7;
+}
+
+.rate-card {
+  background: var(--paper);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-sm);
+}
+
+.rate-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.2rem;
+  border-bottom: 1px solid var(--border-light);
+  font-family: var(--font-display);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.rate-card-head span:last-child {
+  color: var(--lime-deep);
+}
+
+.rate-card-list {
+  list-style: none;
+}
+
+.rate-card-row {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: start;
+  padding: 1.25rem 1.2rem;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.rate-card-row[data-quoted='true'] {
+  background: var(--dark-green);
+  color: var(--text-light);
+}
+
+.rate-card-row[data-quoted='true'] p,
+.rate-card-row[data-quoted='true'] .rate-card-includes {
+  color: var(--text-muted-on-dark);
+}
+
+.rate-card-row[data-quoted='true'] .rate-card-amount {
+  color: var(--lime);
+}
+
+.rate-card-code {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--lime-deep);
+}
+
+.rate-card-row[data-quoted='true'] .rate-card-code {
+  color: var(--lime);
+}
+
+.rate-card-row h3 {
+  margin-bottom: 0.2rem;
+  font-size: 1.05rem;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.rate-card-row p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.rate-card-includes {
+  display: block;
+  margin-top: 0.45rem;
+  color: var(--text-muted);
+  font-size: 0.78rem;
+}
+
+.rate-card-amount {
+  font-family: var(--font-display);
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-dark);
+}
+
+.rate-card-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  padding: 1rem 1.2rem 1.15rem;
+}
+
+.rate-card-foot p {
+  color: var(--text-muted);
+  font-size: 0.82rem;
+}
+
+.rate-card-foot a {
+  font-family: var(--font-display);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 /* FAQ */
 .faq {
   background: var(--dark-green);
@@ -2163,6 +2307,7 @@ main,
   .workflow-intro,
   .proof-header,
   .operations-grid,
+  .pricing-grid,
   .faq-grid {
     grid-template-columns: 1fr;
   }
@@ -2222,6 +2367,7 @@ main,
   }
 
   .operations-copy,
+  .pricing-copy,
   .faq-heading {
     position: static;
   }
@@ -2277,6 +2423,14 @@ main,
 
   .preview-meta {
     grid-template-columns: 1fr;
+  }
+
+  .rate-card-row {
+    grid-template-columns: 2rem minmax(0, 1fr);
+  }
+
+  .rate-card-amount {
+    grid-column: 2;
   }
 
   .preview-progress li {

@@ -9,8 +9,8 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { SITE_LINKS } from '@/lib/site';
 
 const navLinks = [
-  { label: 'Services', href: '#services', id: 'services' },
-  { label: 'How it works', href: '#how-it-works', id: 'how-it-works' },
+  { label: 'Journey', href: '#how-it-works', id: 'how-it-works' },
+  { label: 'Pricing', href: '#pricing', id: 'pricing' },
   { label: 'Waitlist', href: '#waitlist', id: 'waitlist' },
 ];
 
@@ -125,9 +125,9 @@ export default function Header() {
           left: 0,
           right: 0,
           margin: '0 auto',
-          width: scrolled ? 'min(92%, 1000px)' : '100%',
-          padding: scrolled ? '10px 10px 10px 24px' : '20px clamp(1.5rem, 5vw, 4rem)',
-          zIndex: 100,
+          width: scrolled ? 'min(94%, 1080px)' : '100%',
+          padding: scrolled ? '8px 8px 8px 22px' : '20px clamp(1.5rem, 5vw, 4rem)',
+          zIndex: 200,
           borderRadius: scrolled ? 'var(--radius-pill)' : 0,
           transition: morphTransition,
         }}
@@ -157,9 +157,6 @@ export default function Header() {
 
         <div className="header-actions">
           <ThemeToggle />
-          <a className="header-login" href={SITE_LINKS.staffLogin}>
-            Staff sign in
-          </a>
           <motion.a
             className="btn btn-primary header-quote"
             href={SITE_LINKS.requestQuote}

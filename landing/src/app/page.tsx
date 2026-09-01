@@ -9,6 +9,7 @@ import About from '@/components/About';
 import Quality from '@/components/Quality';
 import Team from '@/components/Team';
 import Reviews from '@/components/Reviews';
+import Pricing from '@/components/Pricing';
 import FAQ from '@/components/FAQ';
 import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
@@ -27,6 +28,7 @@ export default function Home() {
       <Quality />
       <Team />
       <Reviews />
+      <Pricing />
       <FAQ />
       <Contact />
       <Footer />
