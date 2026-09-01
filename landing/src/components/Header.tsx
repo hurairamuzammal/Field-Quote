@@ -9,7 +9,7 @@ import ThemeToggle from '@/components/ThemeToggle';
 import { SITE_LINKS } from '@/lib/site';
 
 const navLinks = [
-  { label: 'Journey', href: '#how-it-works', id: 'how-it-works' },
+  { label: 'The flow', href: '#how-it-works', id: 'how-it-works' },
   { label: 'Pricing', href: '#pricing', id: 'pricing' },
   { label: 'Waitlist', href: '#waitlist', id: 'waitlist' },
 ];

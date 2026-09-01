@@ -29,7 +29,7 @@ export default function Gallery() {
           </div>
           <p className="section-intro">
             These are FieldQuote screens from the working app: the request inbox,
-            the quote the admin reviews, and the technician job list that closes
+            the quote the admin opens, and the technician job list that closes
             the visit with notes and a photo.
           </p>
         </motion.div>
@@ -41,23 +41,23 @@ export default function Gallery() {
           >
             <Image
               src="/images/product/admin-quotes.jpg"
-              alt="FieldQuote All Quotes board: navy sidebar, search, status filters, and quote totals"
+              alt="FieldQuote admin quotes board with customer rows, status pills, and subtotals"
               fill
               sizes="(max-width: 700px) 100vw, 58vw"
               quality={82}
             />
-            <figcaption>All Quotes dashboard</figcaption>
+            <figcaption>Admin quotes board</figcaption>
           </motion.figure>
 
           <motion.figure className="proof-image" {...fadeUp(reducedMotion, 0.14)}>
             <Image
               src="/images/product/quote-modal.jpg"
-              alt="FieldQuote quote review popup with price-book lines and totals"
+              alt="Quote editor for Priya Shah with line items, quantities, and Save changes"
               fill
               sizes="(max-width: 700px) 100vw, 38vw"
-              quality={72}
+              quality={84}
             />
-            <figcaption>Quote review before send</figcaption>
+            <figcaption>Quote editor</figcaption>
           </motion.figure>
 
           <motion.div className="proof-record" {...fadeUp(reducedMotion, 0.2)}>

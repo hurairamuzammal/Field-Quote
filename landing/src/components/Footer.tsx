@@ -32,7 +32,7 @@ export default function Footer() {
             <div>
               <p className="footer-column-label">Explore</p>
               <a href="#services">Services</a>
-              <a href="#how-it-works">How it works</a>
+              <a href="#how-it-works">The flow</a>
               <a href="#proof">Product</a>
               <a href="#pricing">Pricing</a>
               <a href="#about">How we work</a>
