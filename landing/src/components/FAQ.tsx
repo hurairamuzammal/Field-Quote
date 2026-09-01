@@ -21,6 +21,10 @@ const faqs = [
     a: 'Yes. The request flow supports job photos and voice input so you can show the issue and explain what is happening without fitting everything into a short text box.',
   },
   {
+    q: 'What does FieldQuote cost?',
+    a: 'Seat prices are not published yet. The landing page shows a draft rate card (Solo, Crew, Dispatch) with amounts marked TBA. Join the waitlist and you get a confirmation email when launch pricing is announced. There is nothing to pay on this site.',
+  },
+  {
     q: 'When do I pay?',
     a: 'If the quote requires a deposit, it is collected after you accept and before the job is scheduled. When the work is complete, a separate secure payment link is sent for any remaining balance.',
   },

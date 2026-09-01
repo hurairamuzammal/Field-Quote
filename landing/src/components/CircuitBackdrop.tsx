@@ -156,14 +156,18 @@ export default function CircuitBackdrop() {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     let frame = 0;
     let disposed = false;
+    let visible = true;
     let w = 0;
     let h = 0;
     let layout: ReturnType<typeof buildLayout> | null = null;
     const mouse = { x: -9999, y: -9999 };
     const cursor = { x: -9999, y: -9999 };
 
+    const shouldAnimate = () =>
+      !reduced && visible && document.visibilityState === 'visible';
+
     const resize = () => {
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const dpr = Math.min(window.devicePixelRatio || 1, reduced ? 1 : 1.5);
       const rect = host.getBoundingClientRect();
       w = Math.max(1, Math.round(rect.width));
       h = Math.max(1, Math.round(rect.height));
@@ -244,6 +248,15 @@ export default function CircuitBackdrop() {
       }
 
       ctx.globalAlpha = 1;
+      if (shouldAnimate()) {
+        frame = window.requestAnimationFrame(draw);
+      } else {
+        frame = 0;
+      }
+    };
+
+    const startLoop = () => {
+      if (disposed || frame) return;
       frame = window.requestAnimationFrame(draw);
     };
 
@@ -259,15 +272,27 @@ export default function CircuitBackdrop() {
     };
 
     resize();
-    frame = window.requestAnimationFrame(draw);
+    startLoop();
     const observer = new ResizeObserver(resize);
     observer.observe(host);
+    const vis = new IntersectionObserver(
+      ([entry]) => {
+        visible = Boolean(entry?.isIntersecting);
+        if (shouldAnimate()) startLoop();
+      },
+      { threshold: 0.05 },
+    );
+    vis.observe(host);
+    const onVisibility = () => {
+      if (shouldAnimate()) startLoop();
+    };
     host.addEventListener('pointermove', toLocal);
     host.addEventListener('pointerleave', onLeave);
     window.addEventListener('resize', resize);
+    document.addEventListener('visibilitychange', onVisibility);
 
     const themeWatcher = new MutationObserver(() => {
-      /* colors are read each frame */
+      if (!frame) startLoop();
     });
     themeWatcher.observe(document.documentElement, {
       attributes: true,
@@ -278,9 +303,11 @@ export default function CircuitBackdrop() {
       disposed = true;
       window.cancelAnimationFrame(frame);
       observer.disconnect();
+      vis.disconnect();
       host.removeEventListener('pointermove', toLocal);
       host.removeEventListener('pointerleave', onLeave);
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', onVisibility);
       themeWatcher.disconnect();
     };
   }, []);

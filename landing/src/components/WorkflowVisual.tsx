@@ -461,10 +461,11 @@ function StageContent({
         <StageFrame label="Technician record" status="Completed" compact={compact}>
           <div className="stage-photo">
             <Image
-              src="/images/images.jpeg"
+              src="/images/panel-work.jpg"
               alt=""
               fill
               sizes="440px"
+              quality={70}
             />
             <span className="stage-photo-label">Completion photo added</span>
           </div>

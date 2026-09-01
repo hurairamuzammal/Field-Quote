@@ -33,7 +33,8 @@ export default function Footer() {
               <p className="footer-column-label">Explore</p>
               <a href="#services">Services</a>
               <a href="#how-it-works">How it works</a>
-              <a href="#proof">On-site proof</a>
+              <a href="#proof">Product</a>
+              <a href="#pricing">Pricing</a>
               <a href="#about">How we work</a>
               <a href="#team">Field visits</a>
               <a href="#faq">Questions</a>

@@ -63,6 +63,7 @@ export default function Services() {
               alt="Electrician working on a labelled industrial distribution panel"
               fill
               sizes="(max-width: 900px) 100vw, 42vw"
+              quality={72}
             />
             <figcaption>
               Electrical work moves from a documented request to an agreed on-site visit.

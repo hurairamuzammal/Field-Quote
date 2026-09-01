@@ -16,9 +16,7 @@ export default function Hero() {
       <div className="container hero-grid">
         <motion.div
           className="hero-copy"
-          initial={reducedMotion ? false : { opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease }}
+          initial={false}
         >
           <p className="hero-kicker">Electrical service, without the waiting around</p>
           <h1 id="hero-heading">
@@ -76,7 +74,7 @@ export default function Hero() {
           aria-label="Example FieldQuote service journey"
           initial={reducedMotion ? false : { opacity: 0, x: 48 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.8, delay: reducedMotion ? 0 : 0.12, ease }}
+          transition={{ duration: 0.8, ease }}
         >
           <div className="preview-topline">
             <span>Example service journey</span>

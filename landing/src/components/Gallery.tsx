@@ -22,15 +22,15 @@ export default function Gallery() {
       <div className="container">
         <motion.div className="proof-header" {...fadeUp(reducedMotion)}>
           <div>
-            <p className="section-label section-label--dark">The on-site outcome</p>
+            <p className="section-label section-label--dark">The product in use</p>
             <h2 id="proof-heading" className="section-heading">
-              Digital clarity. Physical work.
+              Real boards. Real quotes.
             </h2>
           </div>
           <p className="section-intro">
-            The workflow ends with a technician at the property and a documented
-            result. Completion photos and notes connect the on-site work to the same
-            job record that began with the original request.
+            These are FieldQuote screens from the working app: the request inbox,
+            the quote the admin reviews, and the technician job list that closes
+            the visit with notes and a photo.
           </p>
         </motion.div>
 
@@ -40,28 +40,30 @@ export default function Gallery() {
             {...fadeUp(reducedMotion, 0.08)}
           >
             <Image
-              src="/images/images.jpeg"
-              alt="Technician inspecting an electrical installation"
+              src="/images/product/admin-quotes.jpg"
+              alt="FieldQuote All Quotes board: navy sidebar, search, status filters, and quote totals"
               fill
               sizes="(max-width: 700px) 100vw, 58vw"
+              quality={82}
             />
-            <figcaption>Electrical installation inspection</figcaption>
+            <figcaption>All Quotes dashboard</figcaption>
           </motion.figure>
 
           <motion.figure className="proof-image" {...fadeUp(reducedMotion, 0.14)}>
             <Image
-              src="/images/images (1).jpeg"
-              alt="Electrician beside an electrical distribution board"
+              src="/images/product/quote-modal.jpg"
+              alt="FieldQuote quote review popup with price-book lines and totals"
               fill
               sizes="(max-width: 700px) 100vw, 38vw"
+              quality={72}
             />
-            <figcaption>Distribution board service</figcaption>
+            <figcaption>Quote review before send</figcaption>
           </motion.figure>
 
           <motion.div className="proof-record" {...fadeUp(reducedMotion, 0.2)}>
             <div>
-              <span className="proof-record-label">Completion record</span>
-              <h3>Proof before close-out.</h3>
+              <span className="proof-record-label">Field close-out</span>
+              <h3>Same job on the phone.</h3>
             </div>
             <ul className="proof-record-list">
               <li>
