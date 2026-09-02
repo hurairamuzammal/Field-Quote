@@ -42,3 +42,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 temp.txt
+
+# Bubble editor exports — contain API Connector keys and saved test credentials
+*.bubble
+.bubble
+.bubble/
