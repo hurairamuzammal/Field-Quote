@@ -7,11 +7,12 @@ import { brandedEmailHtml } from '../_shared/email-layout.ts'
 import { fetchCompanyBrand, resolveEmailLogoUrl } from '../_shared/company.ts'
 import { requireCronOrAdmin } from '../_shared/cron-auth.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
-import { countSentEmails, sendAndLogEmail } from '../_shared/send-email.ts'
+import { countSentEmails, fetchAdminEmails, sendAndLogEmail } from '../_shared/send-email.ts'
 import { readJsonBody, rejectWrongMethod, unexpectedError } from '../_shared/http.ts'
 
 const MS_DAY = 24 * 60 * 60 * 1000
 const INVOICE_NUDGE_TEMPLATE = 'final_invoice_nudge'
+const INVOICE_FLAG_TEMPLATE = 'final_invoice_flagged_admin'
 const MAX_INVOICE_NUDGES = 2
 
 const json = (req: Request, body: unknown, status = 200) =>
@@ -77,6 +78,54 @@ async function finalInvoiceSentAt(
   return Number.isNaN(d.getTime()) ? null : d
 }
 
+/**
+ * §9.2: "…nudged at +3 and +7 days, then flagged to admin — never more."
+ *
+ * `invoice_nudge_exhausted` alone was a column no human ever reads, so the
+ * "flagged to admin" half never actually happened. This sends exactly one notice
+ * per job — capped by counting email_log, same discipline as every other cap.
+ */
+async function flagInvoiceToAdmin(
+  admin: SupabaseClient,
+  job: { id: string; company_id: string; customer_name: string; customer_email: string },
+  brand: { name: string; logoUrl: string | null },
+): Promise<boolean> {
+  const already = await countSentEmails(admin, job.id, [INVOICE_FLAG_TEMPLATE])
+  if (already > 0) return false
+
+  const adminEmails = await fetchAdminEmails(admin, job.company_id)
+  if (!adminEmails.length) {
+    console.error('flagInvoiceToAdmin: no active admin for company', job.company_id)
+    return false
+  }
+
+  const html = brandedEmailHtml({
+    companyName: brand.name,
+    logoUrl: brand.logoUrl,
+    eyebrow: 'Needs chasing',
+    title: `Unpaid final invoice — ${job.customer_name}`,
+    paragraphs: [
+      `${job.customer_name} has not paid the final invoice after two automatic reminders.`,
+      'Automatic chasing has stopped for this job, as per the follow-up cap. Please follow up manually.',
+    ],
+    note: 'You will not get another automatic reminder about this job.',
+    preheader: `Unpaid invoice needs chasing — ${job.customer_name}`,
+  })
+
+  const res = await sendAndLogEmail({
+    admin,
+    companyId: job.company_id,
+    toEmail: adminEmails,
+    template: INVOICE_FLAG_TEMPLATE,
+    relatedId: job.id,
+    subject: `Unpaid invoice needs chasing — ${job.customer_name}`,
+    html,
+    companyName: brand.name,
+  })
+  if (!res.ok) console.error('flagInvoiceToAdmin:', res.error)
+  return res.ok
+}
+
 type JobRow = {
   id: string
   company_id: string
@@ -115,6 +164,7 @@ Deno.serve(async (req) => {
       tech_digests: 0,
       invoice_nudges: 0,
       invoice_flags: 0,
+      admin_flag_emails: 0,
       skipped: 0,
       failed: 0,
     }
@@ -332,6 +382,15 @@ Deno.serve(async (req) => {
       const nudgeCount = await countSentEmails(admin, job.id, [INVOICE_NUDGE_TEMPLATE])
       if (nudgeCount >= MAX_INVOICE_NUDGES) {
         await admin.from('jobs').update({ invoice_nudge_exhausted: true }).eq('id', job.id)
+      let cached = brandCache.get(job.company_id)
+      if (!cached) {
+        const brand = await fetchCompanyBrand(admin, job.company_id)
+        cached = 'error' in brand
+          ? { name: 'Your company', logoUrl: null }
+          : { name: brand.brand.name, logoUrl: resolveEmailLogoUrl(brand.brand.logo_key) }
+        brandCache.set(job.company_id, cached)
+      }
+        if (await flagInvoiceToAdmin(admin, job, cached)) stats.admin_flag_emails++
         stats.invoice_flags++
         continue
       }
@@ -395,6 +454,7 @@ Deno.serve(async (req) => {
       const newCount = nudgeCount + 1
       if (newCount >= MAX_INVOICE_NUDGES) {
         await admin.from('jobs').update({ invoice_nudge_exhausted: true }).eq('id', job.id)
+        if (await flagInvoiceToAdmin(admin, job, cached)) stats.admin_flag_emails++
         stats.invoice_flags++
       }
     }

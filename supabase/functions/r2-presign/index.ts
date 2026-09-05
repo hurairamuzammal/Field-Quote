@@ -21,6 +21,10 @@ const MAX_BYTES: Record<string, number> = {
   logo: 10 * 1024 ** 2,
 }
 
+/** Long enough for a 20 MB audio note on a bad mobile connection, short enough
+ *  that a leaked URL is worthless by the time anyone finds it. */
+const PUT_URL_TTL_SEC = 600
+
 const ALLOWED_GET_PREFIXES = ['requests/photos/', 'requests/audio/'] as const
 const LOGO_GET_KEY = /^companies\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/logo\//i
 const LOGO_EXTS = new Set(['jpg', 'jpeg', 'png', 'webp', 'svg'])
@@ -184,7 +188,17 @@ Deno.serve(async (req) => {
       }
     }
     if (kind === 'audio' && !mime.startsWith('audio/')) return json(req, { error: 'Expected audio' }, 400)
-    if (fileSize && Number(fileSize) > (MAX_BYTES[String(kind)] ?? MAX_BYTES.photo)) {
+    // §5.1 caps the upload size, so the size has to be stated. It used to be
+    // optional (`if (fileSize && …)`), which meant omitting the field skipped the
+    // check entirely and handed an anonymous caller an unbounded PUT URL.
+    const declaredSize = Number(fileSize)
+    if (!Number.isFinite(declaredSize) || declaredSize <= 0) {
+      return json(req, {
+        error: 'fileSize is required',
+        hint: 'Send the file size in bytes so the upload can be size-checked.',
+      }, 400)
+    }
+    if (declaredSize > (MAX_BYTES[String(kind)] ?? MAX_BYTES.photo)) {
       return json(req, { error: 'File too large' }, 400)
     }
 
@@ -208,12 +222,18 @@ Deno.serve(async (req) => {
       objectKey = `${folder}/${crypto.randomUUID()}.${ext}`
     }
 
+    // An upload URL only has to survive the upload it was minted for. Left
+    // unset, SigV4 defaults to 86400s — a day-long anonymous write handle into
+    // the bucket. `signGetUrl` already clamps downloads; this is the same idea.
+    const putUrl = new URL(`${BASE}/${objectKey}`)
+    putUrl.searchParams.set('X-Amz-Expires', String(PUT_URL_TTL_SEC))
+
     const signed = await r2.sign(
-      new Request(`${BASE}/${objectKey}`, { method: 'PUT' }),
+      new Request(putUrl.toString(), { method: 'PUT' }),
       { aws: { signQuery: true }, headers: {} },
     )
 
-    return json(req, { url: signed.url, objectKey, mime })
+    return json(req, { url: signed.url, objectKey, mime, expires_in: PUT_URL_TTL_SEC })
   } catch (e) {
     return json(req, { error: 'Unexpected error' }, 500)
   }

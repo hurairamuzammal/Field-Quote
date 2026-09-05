@@ -9,6 +9,7 @@ import { requireCronOrAdmin } from '../_shared/cron-auth.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { quotePageUrl } from '../_shared/quote-url.ts'
 import { countSentEmails, sendAndLogEmail } from '../_shared/send-email.ts'
+import { generateText, hasTextProvider, sanitiseSlot } from '../_shared/ai-text.ts'
 import { readJsonBody, rejectWrongMethod, unexpectedError } from '../_shared/http.ts'
 
 const FOLLOWUP_TEMPLATES = ['quote_followup_sent', 'quote_followup_viewed'] as const
@@ -82,6 +83,7 @@ type QuoteRow = {
   requests: {
     customer_name: string
     customer_email: string
+    description: string | null
   } | null
 }
 
@@ -93,7 +95,7 @@ async function loadQuotes(
   let q = admin
     .from('quotes')
     .select(
-      'id, company_id, status, token, valid_until, viewed_at, updated_at, total, deposit_amount, requests(customer_name, customer_email)',
+      'id, company_id, status, token, valid_until, viewed_at, updated_at, total, deposit_amount, requests(customer_name, customer_email, description)',
     )
     .eq('status', status)
 
@@ -104,7 +106,56 @@ async function loadQuotes(
     console.error('loadQuotes:', error.message)
     return []
   }
-  return (data ?? []) as QuoteRow[]
+  // supabase-js types every embedded relation as an array; `requests` is a to-one
+  // embed so PostgREST actually returns an object. Cast through unknown rather
+  // than lying about the shape.
+  return (data ?? []) as unknown as QuoteRow[]
+}
+
+/**
+ * §9.1: "Follow-up copy is Claude-personalized within a fixed admin-approved
+ * template (tone locked; Claude fills specifics like job summary)."
+ *
+ * The template below is NOT model-written. The model only supplies one short
+ * opening clause describing the job, and `sanitiseSlot` throws it away unless it
+ * is plain, link-free, money-free and at most two sentences. Anything else →
+ * the static fallback, so tone and commercial content stay admin-controlled.
+ */
+async function personalisedOpener(args: {
+  customerName: string
+  jobSummary: string
+  companyName: string
+  variant: 'sent' | 'viewed'
+  fallback: string
+}): Promise<string> {
+  const summary = args.jobSummary.trim()
+  if (!summary || !hasTextProvider()) return args.fallback
+
+  const system = [
+    'You write one short sentence for a UK field-service company\'s follow-up email.',
+    'Reference the specific job in plain, warm, professional English.',
+    'Rules: one sentence, max 25 words. No prices, no numbers with currency, no links,',
+    'no email addresses, no markdown, no greeting, no sign-off, no quotes around the text.',
+    'Do not invent details that are not in the job description.',
+    'Return only the sentence.',
+  ].join(' ')
+
+  const user = [
+    `Company: ${args.companyName}`,
+    `Customer first name: ${args.customerName}`,
+    `Job description (verbatim from the customer): ${summary.slice(0, 500)}`,
+    args.variant === 'sent'
+      ? 'Context: we sent a quote two days ago and they have not opened it.'
+      : 'Context: they opened the quote a few days ago and have not responded.',
+  ].join('\n')
+
+  const raw = await generateText({ system, user, maxTokens: 80, timeoutMs: 8000 })
+  const clean = sanitiseSlot(raw, { maxChars: 160 })
+  if (!clean) {
+    if (raw) console.error('followup personalisation rejected by sanitiseSlot')
+    return args.fallback
+  }
+  return clean
 }
 
 async function maybeSendFollowup(args: {
@@ -217,6 +268,13 @@ Deno.serve(async (req) => {
       }
 
       const name = quote.requests?.customer_name?.trim() || 'there'
+      const opener = await personalisedOpener({
+        customerName: name,
+        jobSummary: quote.requests?.description ?? '',
+        companyName: cached.name,
+        variant: 'sent',
+        fallback: 'we sent you a quote a couple of days ago.',
+      })
       const outcome = await maybeSendFollowup({
         admin,
         quote,
@@ -225,7 +283,8 @@ Deno.serve(async (req) => {
         logoUrl: cached.logoUrl,
         subject: `Reminder: your quote from ${cached.name}`,
         paragraphs: [
-          `Hi ${name}, we sent you a quote a couple of days ago.`,
+          // Greeting + money + CTA copy stay locked; only `opener` is model-written.
+          `Hi ${name}, ${opener}`,
           `Total £${Number(quote.total).toFixed(2)} (deposit £${Number(quote.deposit_amount).toFixed(2)}).`,
           'Open the link below when you have a moment — it expires on the date shown in the quote.',
         ],
@@ -271,6 +330,13 @@ Deno.serve(async (req) => {
       }
 
       const name = quote.requests?.customer_name?.trim() || 'there'
+      const opener = await personalisedOpener({
+        customerName: name,
+        jobSummary: quote.requests?.description ?? '',
+        companyName: cached.name,
+        variant: 'viewed',
+        fallback: 'you viewed your quote recently.',
+      })
       const outcome = await maybeSendFollowup({
         admin,
         quote,
@@ -279,7 +345,7 @@ Deno.serve(async (req) => {
         logoUrl: cached.logoUrl,
         subject: `Follow-up on your quote — ${cached.name}`,
         paragraphs: [
-          `Hi ${name}, you viewed your quote recently.`,
+          `Hi ${name}, ${opener}`,
           'If you would like to go ahead, accept and pay the deposit from the link below.',
           'If you have questions, reply to this email and we will help.',
         ],

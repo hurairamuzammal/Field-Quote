@@ -1,5 +1,6 @@
 import { inviteEmailHtml } from '../_shared/email-layout.ts'
-import { fetchCompanyBrand, resendFromHeader, resolveEmailLogoUrl } from '../_shared/company.ts'
+import { fetchCompanyBrand, resolveEmailLogoUrl } from '../_shared/company.ts'
+import { sendAndLogEmail } from '../_shared/send-email.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { requireActiveAdmin } from '../_shared/require-admin.ts'
 import { readJsonBody, rejectWrongMethod, unexpectedError } from '../_shared/http.ts'
@@ -95,34 +96,38 @@ Deno.serve(async (req) => {
     const setPasswordUrl =
       `${passwordSetupBase()}?token_hash=${tokenHash}&type=invite`
 
-    const resendRes = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: resendFromHeader(brand.name),
-        to: [email],
-        subject: `You've been invited to ${brand.name}`,
-        html: inviteEmailHtml({
-          setPasswordUrl,
-          fullName: typeof full_name === 'string' ? full_name : undefined,
-          companyName: brand.name,
-          logoUrl: resolveEmailLogoUrl(brand.logo_key),
-        }),
-      }),
-    })
-
-    const resendData = await resendRes.json()
-
-    await adminClient.from('email_log').insert({
-      to_email: email,
+    // Shared helper: it writes the email_log row WITH company_id (NOT NULL, no default).
+    // Hand-rolling this insert without company_id silently dropped the audit row (§13 R8).
+    const sent = await sendAndLogEmail({
+      admin: adminClient,
+      companyId,
+      toEmail: email,
       template: 'technician_invite',
-      related_id: created.user.id,
-      resend_id: resendData?.id ?? null,
-      status: resendRes.ok ? 'sent' : 'failed',
+      relatedId: created.user.id,
+      subject: `You've been invited to ${brand.name}`,
+      html: inviteEmailHtml({
+        setPasswordUrl,
+        fullName: typeof full_name === 'string' ? full_name : undefined,
+        companyName: brand.name,
+        logoUrl: resolveEmailLogoUrl(brand.logo_key),
+      }),
+      companyName: brand.name,
     })
+
+    if (!sent.ok) {
+      // The auth user exists but has no usable link yet — tell the admin to resend
+      // rather than reporting success on an invite nobody received.
+      return new Response(
+        JSON.stringify({
+          error: 'Technician created but the invite email failed to send',
+          detail: sent.error,
+          user_id: created.user.id,
+          email_status: 'failed',
+          hint: 'Use Resend Invite on the technician row.',
+        }),
+        { status: 502, headers: corsHeaders },
+      )
+    }
 
     return new Response(JSON.stringify({ success: true, user_id: created.user.id }), {
       status: 200,

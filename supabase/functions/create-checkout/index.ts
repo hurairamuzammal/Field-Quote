@@ -1,9 +1,14 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { brandedEmailHtml } from '../_shared/email-layout.ts'
 import { fetchCompanyBrand, resendFromHeader, resolveEmailLogoUrl } from '../_shared/company.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
 import { missingTokenError, readQuoteToken } from '../_shared/quote-token.ts'
 import { unexpectedError } from '../_shared/http.ts'
+import { assertRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts'
+
+/** §7.1 asks for a reason, so an empty one is a validation error, not a null. */
+const MIN_DECLINE_REASON = 3
+const MAX_DECLINE_REASON = 500
 
 const json = (req: Request, b: unknown, s = 200) =>
   new Response(JSON.stringify(b), {
@@ -42,7 +47,7 @@ function successUrl(token: string): string {
 }
 
 async function loadActionableQuote(
-  admin: ReturnType<typeof createClient>,
+  admin: SupabaseClient,
   token: string,
 ): Promise<
   | { ok: true; quote: QuoteRow }
@@ -151,7 +156,7 @@ async function createStripeCheckoutSession(
 
 async function handleDecline(
   req: Request,
-  admin: ReturnType<typeof createClient>,
+  admin: SupabaseClient,
   quote: QuoteRow,
   declinedReason: string,
 ): Promise<Response> {
@@ -275,6 +280,32 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceKey)
+
+    // Public and unauthenticated, and the accept branch reaches Stripe.
+    const limit = await assertRateLimit(admin, {
+      req,
+      route: 'create-checkout-ip',
+      limit: 20,
+      windowMs: 60 * 60 * 1000,
+    })
+    if (!limit.allowed) return rateLimitResponse(corsFor(req), limit.retryAfterSec)
+
+    if (action === 'decline') {
+      const reason = declinedReason.trim()
+      if (reason.length < MIN_DECLINE_REASON) {
+        return json(req, {
+          error: 'Please tell us why so we can improve the quote.',
+          code: 'reason_required',
+        }, 400)
+      }
+      if (reason.length > MAX_DECLINE_REASON) {
+        return json(req, {
+          error: `Please keep the reason under ${MAX_DECLINE_REASON} characters.`,
+          code: 'reason_too_long',
+        }, 400)
+      }
+    }
+
     const loaded = await loadActionableQuote(admin, token)
     if (!loaded.ok) return json(req, loaded.body, loaded.status)
 

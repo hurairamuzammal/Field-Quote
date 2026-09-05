@@ -1,7 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
+import { resolveEmailLogoUrl } from '../_shared/company.ts'
 import { missingTokenError, readQuoteToken } from '../_shared/quote-token.ts'
 import { unexpectedError } from '../_shared/http.ts'
+import { assertRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts'
 
 const json = (req: Request, b: unknown, s = 200) =>
   new Response(JSON.stringify(b), {
@@ -39,6 +41,17 @@ Deno.serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceKey)
+
+    // Public and unauthenticated: every call is a service-role read on a free-tier
+    // database. The 128-bit token makes guessing pointless, but nothing stopped a
+    // single IP hammering this endpoint.
+    const limit = await assertRateLimit(admin, {
+      req,
+      route: 'resolve-quote-token-ip',
+      limit: 60,
+      windowMs: 60 * 60 * 1000,
+    })
+    if (!limit.allowed) return rateLimitResponse(corsFor(req), limit.retryAfterSec)
 
     const { data: quote, error: quoteError } = await admin
       .from('quotes')
@@ -104,14 +117,22 @@ Deno.serve(async (req) => {
 
     const { data: settings } = await admin
       .from('company_settings')
-      .select('name')
+      .select('name, logo_key, contact_email, contact_phone, contact_address')
       .eq('company_id', quote.company_id)
       .maybeSingle()
+
+    const logoUrl = resolveEmailLogoUrl(settings?.logo_key as string | null | undefined)
 
     return json(req, {
       actionable: true,
       status: quote.status,
       company_name: (settings?.name && String(settings.name).trim()) || 'Your company',
+      // §7.1 company details. A customer being asked for a deposit needs to know
+      // who is asking and how to reach them.
+      company_email: settings?.contact_email ?? null,
+      company_phone: settings?.contact_phone ?? null,
+      company_address: settings?.contact_address ?? null,
+      company_logo_url: logoUrl,
       customer_name: requestRow?.customer_name ?? null,
       description: requestRow?.description ?? null,
       valid_until: quote.valid_until,

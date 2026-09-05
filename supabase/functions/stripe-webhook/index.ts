@@ -85,11 +85,28 @@ async function notifyMakeFinalPaid(
     return
   }
   try {
-    const { data: reqRow } = await admin
-      .from('requests')
-      .select('customer_name, customer_email')
-      .eq('id', args.requestId)
-      .maybeSingle()
+    const [{ data: reqRow }, { data: jobRow }] = await Promise.all([
+      admin
+        .from('requests')
+        .select('customer_name, customer_email')
+        .eq('id', args.requestId)
+        .maybeSingle(),
+      args.jobId
+        ? admin.from('jobs').select('technician_id').eq('id', args.jobId).maybeSingle()
+        : Promise.resolve({ data: null as { technician_id: string | null } | null }),
+    ])
+    const technicianId = (jobRow?.technician_id as string | null) ?? null
+    let technicianName: string | null = null
+    let technicianEmail: string | null = null
+    if (technicianId) {
+      const { data: tech } = await admin
+        .from('profiles')
+        .select('full_name, email')
+        .eq('id', technicianId)
+        .maybeSingle()
+      technicianName = (tech?.full_name as string | null) ?? null
+      technicianEmail = (tech?.email as string | null) ?? null
+    }
     const payload = {
       event: 'job_final_paid',
       quote_id: args.quoteId,
@@ -99,6 +116,8 @@ async function notifyMakeFinalPaid(
       currency: args.currency,
       customer_name: reqRow?.customer_name ?? null,
       customer_email: reqRow?.customer_email ?? null,
+      technician_name: technicianName,
+      technician_email: technicianEmail,
     }
     const res = await fetch(url, {
       method: 'POST',
@@ -314,8 +333,14 @@ async function handleCheckoutCompleted(
 
   const companyId = quote.company_id as string
 
+  // §7.2: the quote becomes accepted when the money is confirmed — not when the
+  // session merely completed. Card Checkout is effectively always `paid`, but a
+  // delayed method can complete `unpaid`, and creating the job then would put a
+  // technician on an unfunded visit. Record the attempt, wait for the paid event.
+  const isPaid = session.payment_status === 'paid' || session.payment_status === 'no_payment_required'
+
   let jobId: string | null = null
-  if (kind === 'deposit') {
+  if (kind === 'deposit' && isPaid) {
     jobId = await ensureJob(admin, quote.id, companyId)
     if (quote.status === 'sent' || quote.status === 'viewed') {
       await admin
@@ -352,7 +377,7 @@ async function handleCheckoutCompleted(
 
   // Final → Make even on Stripe replay/duplicate, so a missed review email can still fire.
   // Deposit notify stays insert-only (emails already logged once).
-  if (kind === 'deposit' && !duplicate) {
+  if (kind === 'deposit' && isPaid && !duplicate) {
     await notifyDepositPaid(admin, quote.id, companyId, quote.request_id, amount, currency)
   } else if (kind === 'final') {
     await notifyMakeFinalPaid(admin, {
@@ -370,6 +395,72 @@ async function handleCheckoutCompleted(
     kind,
     quote_id: quote.id,
     job_id: jobId,
+    payment_status: payStatus,
+    awaiting_payment: !isPaid || undefined,
+    duplicate: duplicate || undefined,
+  })
+}
+
+/**
+ * §7.3 `checkout.session.expired` — the customer clicked Accept and never paid.
+ *
+ * No money state changes and the quote keeps its status (it is still live and
+ * acceptable). We only record the abandoned attempt so the admin can see
+ * "3 abandoned checkouts on quote #41" and follow up. Idempotent via the same
+ * UNIQUE stripe_event_id trick as payments.
+ */
+async function handleCheckoutExpired(
+  admin: SupabaseClient,
+  eventId: string,
+  session: StripeSession,
+): Promise<Response> {
+  const quoteId = typeof session.metadata?.quote_id === 'string'
+    ? session.metadata.quote_id.trim()
+    : ''
+  const kindRaw = typeof session.metadata?.kind === 'string'
+    ? session.metadata.kind.trim().toLowerCase()
+    : ''
+  const kind = kindRaw === 'final' ? 'final' : kindRaw === 'deposit' ? 'deposit' : ''
+
+  if (!quoteId || !kind) {
+    return json({ received: true, type: 'checkout.session.expired', skipped: 'missing_metadata' })
+  }
+
+  const { data: quote } = await admin
+    .from('quotes')
+    .select('id, company_id')
+    .eq('id', quoteId)
+    .maybeSingle()
+  if (!quote) {
+    return json({ received: true, type: 'checkout.session.expired', skipped: 'quote_not_found' })
+  }
+
+  const pence = Number(session.amount_total)
+  const amount = Number.isFinite(pence) && pence >= 0 ? round2(pence / 100) : null
+
+  const { error } = await admin.from('checkout_attempts').insert({
+    company_id: quote.company_id,
+    quote_id: quote.id,
+    kind,
+    status: 'expired',
+    amount,
+    currency: (session.currency || 'gbp').toLowerCase().slice(0, 3),
+    stripe_session_id: typeof session.id === 'string' ? session.id : null,
+    stripe_event_id: eventId,
+  })
+
+  const duplicate = isUniqueViolation(error)
+  if (error && !duplicate) {
+    console.error('checkout_attempts insert failed:', error.message)
+    // Still 200: Stripe must not retry forever over our bookkeeping.
+    return json({ received: true, type: 'checkout.session.expired', logged: false })
+  }
+
+  return json({
+    received: true,
+    type: 'checkout.session.expired',
+    quote_id: quote.id,
+    kind,
     duplicate: duplicate || undefined,
   })
 }
@@ -411,10 +502,7 @@ Deno.serve(async (req) => {
   }
 
   const type = event.type ?? ''
-  if (type === 'checkout.session.expired') {
-    return json({ received: true, type })
-  }
-  if (type !== 'checkout.session.completed') {
+  if (type !== 'checkout.session.completed' && type !== 'checkout.session.expired') {
     return json({ received: true, ignored: type })
   }
 
@@ -424,6 +512,9 @@ Deno.serve(async (req) => {
 
   const admin = createClient(supabaseUrl, serviceKey)
   try {
+    if (type === 'checkout.session.expired') {
+      return await handleCheckoutExpired(admin, eventId, session)
+    }
     return await handleCheckoutCompleted(admin, eventId, session)
   } catch {
     return json({ error: 'Unexpected error' }, 500)

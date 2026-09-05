@@ -2,6 +2,7 @@ import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supa
 import { brandedEmailHtml } from '../_shared/email-layout.ts'
 import { fetchCompanyBrand, resendFromHeader, resolveEmailLogoUrl } from '../_shared/company.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
+import { callerMayTouchJob, identifyCaller } from '../_shared/job-mailer-auth.ts'
 import { readJsonBody, rejectWrongMethod, unexpectedError } from '../_shared/http.ts'
 
 const json = (req: Request, b: unknown, s = 200) =>
@@ -34,46 +35,8 @@ function cancelUrl(token: string): string {
   return `${base}?token=${encodeURIComponent(token)}`
 }
 
-function cronSecretOk(req: Request): boolean {
-  const expected = Deno.env.get('CRON_SECRET')?.trim() ?? ''
-  if (!expected) return false
-  const got = (req.headers.get('x-cron-secret') ?? '').trim()
-  if (!got || got.length !== expected.length) return false
-  let out = 0
-  for (let i = 0; i < expected.length; i++) out |= expected.charCodeAt(i) ^ got.charCodeAt(i)
-  return out === 0
-}
 
-function normalizeBearer(req: Request): string | null {
-  const raw = (req.headers.get('Authorization') ?? '').trim()
-  if (!raw) return null
-  const m = raw.match(/^bearer\s+(.+)$/i)
-  if (m?.[1]?.trim()) return `Bearer ${m[1].trim()}`
-  if (raw.startsWith('eyJ')) return `Bearer ${raw}`
-  return null
-}
 
-async function staffMayInvoice(
-  req: Request,
-  jobTechnicianId: string | null,
-): Promise<boolean> {
-  const authHeader = normalizeBearer(req)
-  if (!authHeader) return false
-  const url = Deno.env.get('SUPABASE_URL')
-  const anon = Deno.env.get('SUPABASE_ANON_KEY')
-  if (!url || !anon) return false
-  const userClient = createClient(url, anon, { global: { headers: { Authorization: authHeader } } })
-  const { data: { user } } = await userClient.auth.getUser()
-  if (!user) return false
-  const { data: profile } = await userClient
-    .from('profiles')
-    .select('role, active')
-    .eq('id', user.id)
-    .maybeSingle()
-  if (!profile || profile.active === false) return false
-  if (profile.role === 'admin') return true
-  return profile.role === 'technician' && jobTechnicianId === user.id
-}
 
 async function createFinalCheckout(args: {
   quoteId: string
@@ -139,6 +102,11 @@ Deno.serve(async (req) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!supabaseUrl || !serviceKey) return json(req, { error: 'Server misconfigured' }, 500)
 
+    // Identity before anything else — an anonymous caller must not be able to
+    // spend a service-role query or learn whether a job id exists (rule 7).
+    const caller = await identifyCaller(req)
+    if (!caller) return json(req, { error: 'Not allowed' }, 401)
+
     const parsed = await readJsonBody<{ job_id?: unknown }>(req)
     if (!parsed.ok) return parsed.response
     const jobId = typeof parsed.value.job_id === 'string' ? parsed.value.job_id.trim() : ''
@@ -157,8 +125,9 @@ Deno.serve(async (req) => {
       return json(req, { error: 'Job is not completed', status: job.status }, 409)
     }
 
-    if (!cronSecretOk(req) && !(await staffMayInvoice(req, job.technician_id))) {
-      return json(req, { error: 'Not allowed' }, 401)
+    // Row-dependent half: a technician may only invoice their own job.
+    if (!callerMayTouchJob(caller, job.technician_id as string | null)) {
+      return json(req, { error: 'Not allowed' }, 403)
     }
 
     const { data: existingFinal } = await admin

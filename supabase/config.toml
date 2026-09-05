@@ -492,6 +492,13 @@ verify_jwt = false
 import_map = "./functions/send-final-invoice/deno.json"
 entrypoint = "./functions/send-final-invoice/index.ts"
 
+# Same pattern (§8.1 scheduling confirmation): trigger via x-cron-secret, or staff JWT.
+[functions.send-schedule-confirmation]
+enabled = true
+verify_jwt = false
+import_map = "./functions/send-schedule-confirmation/deno.json"
+entrypoint = "./functions/send-schedule-confirmation/index.ts"
+
 # Public landing waitlist (§11). No JWT; rate-limit + honeypot inside Deno.
 [functions.submit-waitlist]
 enabled = true
@@ -518,3 +525,19 @@ enabled = true
 verify_jwt = false
 import_map = "./functions/daily-reminders/deno.json"
 entrypoint = "./functions/daily-reminders/index.ts"
+
+# §10 ops assistant. Gateway JWT on: both require an active admin JWT in Deno
+# (requireActiveAdmin), so there is no reason to let unauthenticated traffic
+# reach the worker at all.
+[functions.ops-assistant]
+enabled = true
+verify_jwt = true
+import_map = "./functions/ops-assistant/deno.json"
+entrypoint = "./functions/ops-assistant/index.ts"
+
+# The confirm half of §10: nothing reaches `jobs` or Resend until this runs.
+[functions.ops-confirm]
+enabled = true
+verify_jwt = true
+import_map = "./functions/ops-confirm/deno.json"
+entrypoint = "./functions/ops-confirm/index.ts"

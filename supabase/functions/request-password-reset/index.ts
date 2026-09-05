@@ -7,6 +7,7 @@ import {
   resolveEmailLogoUrl,
 } from '../_shared/company.ts'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
+import { sendAndLogEmail } from '../_shared/send-email.ts'
 import { assertRateLimit, rateLimitResponse } from '../_shared/rate-limit.ts'
 import { readJsonBody, rejectWrongMethod, unexpectedError } from '../_shared/http.ts'
 
@@ -83,11 +84,20 @@ Deno.serve(async (req) => {
     })
 
     if (linkError || !linkData?.properties?.hashed_token) {
-      await adminClient.from('email_log').insert({
-        to_email: emailNorm,
-        template: 'password_reset',
-        status: 'failed',
-      })
+      // No such user (or GoTrue refused). Still 200 — never reveal account existence.
+      // Log only when we know the company: email_log.company_id is NOT NULL with no default,
+      // so inserting without it silently drops the row (§13 R8).
+      if (companyId) {
+        const { error: logError } = await adminClient.from('email_log').insert({
+          company_id: companyId,
+          to_email: emailNorm,
+          template: 'password_reset',
+          status: 'failed',
+        })
+        if (logError) console.error('email_log insert failed (password_reset):', logError.message)
+      } else {
+        console.error('password_reset: no company_id resolved; audit row skipped')
+      }
       return new Response(JSON.stringify({ success: true }), {
         status: 200,
         headers: corsHeaders,
@@ -98,28 +108,39 @@ Deno.serve(async (req) => {
     const resetUrl =
       `${passwordSetupBase()}?token_hash=${tokenHash}&type=recovery`
 
-    const resendRes = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: resendFromHeader(companyName),
-        to: [emailNorm],
+    const html = passwordResetEmailHtml({ resetUrl, companyName, logoUrl })
+
+    if (companyId) {
+      // Shared helper logs with company_id; the old hand-rolled insert omitted it (§13 R8).
+      const sent = await sendAndLogEmail({
+        admin: adminClient,
+        companyId,
+        toEmail: emailNorm,
+        template: 'password_reset',
+        relatedId: null,
         subject: `Reset your ${companyName} password`,
-        html: passwordResetEmailHtml({ resetUrl, companyName, logoUrl }),
-      }),
-    })
-    const resendData = await resendRes.json()
+        html,
+        companyName,
+      })
+      if (!sent.ok) console.error('password_reset send failed:', sent.error)
+    } else {
+      console.error('password_reset: no company_id resolved; sending unlogged')
+      await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${Deno.env.get('RESEND_API_KEY')}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: resendFromHeader(companyName),
+          to: [emailNorm],
+          subject: `Reset your ${companyName} password`,
+          html,
+        }),
+      })
+    }
 
-    await adminClient.from('email_log').insert({
-      to_email: emailNorm,
-      template: 'password_reset',
-      resend_id: resendData?.id ?? null,
-      status: resendRes.ok ? 'sent' : 'failed',
-    })
-
+    // Always 200, whatever happened above — no account enumeration, no send-failure signal.
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
       headers: corsHeaders,

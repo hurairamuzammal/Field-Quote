@@ -35,8 +35,11 @@ export function isAllowedOrigin(origin: string): boolean {
   if (host === 'localhost' || host === '127.0.0.1') return true
   if (host === 'fieldquote-26446.bubbleapps.io') return true
   if (host === 'bubble.io' || host.endsWith('.bubble.io')) return true
-  if (host.endsWith('.bubbleapps.io')) return true
-  if (host.endsWith('.vercel.app')) return true
+  // Deliberately NOT `*.bubbleapps.io` / `*.vercel.app`: those admit every app on
+  // either platform. Our own Bubble host is matched above; the Vercel landing
+  // origin comes from PUBLIC_LANDING_URL / CORS_ALLOWED_ORIGINS below, so preview
+  // deploys are added by name rather than by wildcard.
+  if (host.endsWith('.bubbleapps.io') && host.startsWith('fieldquote-')) return true
   const originNorm = origin.replace(/\/$/, '')
   return extraAllowedOrigins().some((allowed) => {
     try {

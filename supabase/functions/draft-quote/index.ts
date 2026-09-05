@@ -1,5 +1,12 @@
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { corsFor, corsPreflight } from '../_shared/cors.ts'
+import {
+  bytesToBase64,
+  getObject,
+  mimeFromKey,
+  signGetUrl,
+} from '../_shared/r2-sign.ts'
+import { transcribeAudio } from '../_shared/transcribe-audio.ts'
 import { readJsonBody, unexpectedError } from '../_shared/http.ts'
 
 const json = (req: Request, b: unknown, s = 200) =>
@@ -41,10 +48,23 @@ type ModelDraft = {
   line_items?: ModelLine[]
   assumptions?: string[]
   clarifying_questions?: string[]
-  confidence?: number
+  /** Model may send the enum or a float; normalizeConfidence() handles both. */
+  confidence?: unknown
 }
 
-type ImagePart = { url: string; media_type?: string }
+type ImagePart = {
+  url: string
+  media_type?: string
+  /** How the bytes reached the model. Not sent in the chat payload. */
+  delivery?: 'inline' | 'url'
+}
+
+/** GLM vision cap is 5 MB/image after encoding; leave headroom for base64. */
+const MAX_INLINE_IMAGE_BYTES = 3.5 * 1024 * 1024
+const MAX_INLINE_TOTAL_BYTES = 10 * 1024 * 1024
+const INLINE_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+/** GLM vision does not accept HEIC/SVG; a bad part can fail the whole call. */
+const SKIP_VISION_MIME = new Set(['image/heic', 'image/heif', 'image/svg+xml'])
 
 function normalizeBearer(req: Request): string | null {
   const raw = (req.headers.get('Authorization') ?? req.headers.get('authorization') ?? '').trim()
@@ -115,13 +135,14 @@ function buildMessages(args: {
     'ALWAYS return at least one line_item. Never return an empty line_items array.',
     'Never invent price book ids. Never set prices — omit unit_price entirely.',
     'Prefer matching keywords/name/category when the request clearly fits an item.',
-    'If photos are attached, use them only to understand the work — still match price book ids only.',
+    'If photos are attached, they are the customer site photos — use them only to understand the work, still match price book ids only.',
+    'If a voice-note transcription is included, treat that raw dictation as the customer speaking about the job.',
     'Return ONLY a JSON object (no markdown) with this shape:',
     JSON.stringify({
       line_items: [{ price_book_item_id: 'uuid|null', label: 'string', qty: 1 }],
       assumptions: ['string'],
       clarifying_questions: ['string'],
-      confidence: 0.0,
+      confidence: 'high|med|low',
     }),
   ].join(' ')
 
@@ -147,6 +168,9 @@ function buildMessages(args: {
   }
 
   const images = args.images?.filter((i) => i.url?.trim()) ?? []
+  if (images.length) {
+    text += `\n\n${images.length} site photo(s) are attached as images in this message. Use them to understand the work.`
+  }
   if (!images.length) {
     return [
       { role: 'system', content: system },
@@ -154,7 +178,7 @@ function buildMessages(args: {
     ]
   }
 
-  // OpenAI-compatible multimodal content (xAI + OpenRouter)
+  // OpenAI-compatible multimodal content (Z.AI + OpenRouter)
   const content: Array<Record<string, unknown>> = [{ type: 'text', text }]
   for (const img of images.slice(0, 5)) {
     content.push({
@@ -335,6 +359,154 @@ async function draftWithFailover(args: {
   throw new Error(`AI draft failed all providers. ${attempts.join(' | ')}`)
 }
 
+/** §6.1 confidence is an enum, not a float. Accept either shape from the model. */
+function normalizeConfidence(raw: unknown): 'high' | 'med' | 'low' {
+  if (typeof raw === 'string') {
+    const s = raw.trim().toLowerCase()
+    if (s.startsWith('high')) return 'high'
+    if (s.startsWith('med')) return 'med'
+    if (s.startsWith('low')) return 'low'
+  }
+  if (typeof raw === 'number' && Number.isFinite(raw)) {
+    // Models return either 0–1 or 0–100; normalise both.
+    const n = raw > 1 ? raw / 100 : raw
+    if (n >= 0.75) return 'high'
+    if (n >= 0.45) return 'med'
+    return 'low'
+  }
+  // Unknown → the cautious end, so a vague draft never looks confident.
+  return 'low'
+}
+
+/**
+ * §6.1: up to 5 request photos go to the model with the text.
+ *
+ * Bytes are fetched from R2 here and inlined as `data:image/...;base64,...`
+ * whenever they fit. That is what actually puts pixels in the model request —
+ * a signed URL only *points* at R2 and the provider still has to fetch it
+ * (Z.AI often cannot reach Cloudflare). Too-large jpeg/png/webp files fall
+ * back to a signed URL. HEIC/SVG are skipped (GLM vision rejects them).
+ * Any failure degrades to fewer photos or text-only — a missing photo must
+ * never block quoting.
+ */
+async function loadRequestPhotos(
+  admin: SupabaseClient,
+  requestId: string,
+): Promise<{
+  urls: ImagePart[]
+  total: number
+  inlined: number
+  via_url: number
+  note?: string
+}> {
+  const { data, error } = await admin
+    .from('request_media')
+    .select('r2_key')
+    .eq('request_id', requestId)
+    .eq('kind', 'photo')
+    .order('created_at', { ascending: true })
+    .limit(5)
+
+  if (error) {
+    console.error('loadRequestPhotos:', error.message)
+    return { urls: [], total: 0, inlined: 0, via_url: 0, note: 'media_query_failed' }
+  }
+
+  const keys = (data ?? [])
+    .map((r) => String(r.r2_key ?? '').trim())
+    .filter(Boolean)
+  if (!keys.length) return { urls: [], total: 0, inlined: 0, via_url: 0 }
+
+  const parts: ImagePart[] = []
+  let inlineUsed = 0
+
+  const loaded = await Promise.all(keys.map(async (key) => {
+    const obj = await getObject(key)
+    const signed = await signGetUrl(key, 600)
+    return { key, obj, signed }
+  }))
+
+  for (const item of loaded) {
+    const mime = (item.obj?.contentType || mimeFromKey(item.key)).split(';')[0].trim().toLowerCase()
+    if (SKIP_VISION_MIME.has(mime)) continue
+
+    const bytes = item.obj?.bytes
+    const canInline = Boolean(
+      bytes &&
+        bytes.length > 0 &&
+        bytes.length <= MAX_INLINE_IMAGE_BYTES &&
+        inlineUsed + bytes.length <= MAX_INLINE_TOTAL_BYTES &&
+        INLINE_IMAGE_MIME.has(mime),
+    )
+
+    if (canInline && bytes) {
+      parts.push({
+        url: `data:${mime};base64,${bytesToBase64(bytes)}`,
+        media_type: mime,
+        delivery: 'inline',
+      })
+      inlineUsed += bytes.length
+      continue
+    }
+
+    if (item.signed) {
+      parts.push({ url: item.signed, media_type: mime || undefined, delivery: 'url' })
+    }
+  }
+
+  if (!parts.length) {
+    console.error('loadRequestPhotos: no photo could be inlined or signed; text-only draft')
+    return { urls: [], total: keys.length, inlined: 0, via_url: 0, note: 'undeliverable' }
+  }
+
+  return {
+    urls: parts,
+    total: keys.length,
+    inlined: parts.filter((p) => p.delivery === 'inline').length,
+    via_url: parts.filter((p) => p.delivery === 'url').length,
+  }
+}
+
+function foldDictationIntoDescription(typed: string, transcript: string | null): string {
+  const description = typed.trim()
+  const dictation = (transcript ?? '').trim()
+  if (!dictation) return description
+  if (!description) return `Voice note transcription (raw dictation):\n${dictation}`
+
+  const norm = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
+  if (norm(description) === norm(dictation)) return description
+  if (norm(description).includes(norm(dictation))) return description
+
+  return `${description}\n\nVoice note transcription (raw dictation):\n${dictation}`
+}
+
+async function transcribeRequestAudio(
+  admin: SupabaseClient,
+  requestId: string,
+): Promise<{ text: string | null; provider: string | null; note: string; available: number }> {
+  const { data, error } = await admin
+    .from('request_media')
+    .select('r2_key')
+    .eq('request_id', requestId)
+    .eq('kind', 'audio')
+    .order('created_at', { ascending: true })
+    .limit(1)
+
+  if (error) {
+    console.error('transcribeRequestAudio:', error.message)
+    return { text: null, provider: null, note: 'media_query_failed', available: 0 }
+  }
+
+  const key = String(data?.[0]?.r2_key ?? '').trim()
+  if (!key) return { text: null, provider: null, note: 'no_audio', available: 0 }
+
+  const obj = await getObject(key)
+  if (!obj) return { text: null, provider: null, note: 'fetch_failed', available: 1 }
+
+  const result = await transcribeAudio({ bytes: obj.bytes, key, contentType: obj.contentType })
+  return { ...result, available: 1 }
+}
+
 function applyGuardrail(parsed: ModelDraft, bookById: Map<string, BookItem>) {
   const assumptions = Array.isArray(parsed.assumptions)
     ? parsed.assumptions.filter((x) => typeof x === 'string')
@@ -342,10 +514,7 @@ function applyGuardrail(parsed: ModelDraft, bookById: Map<string, BookItem>) {
   const clarifying_questions = Array.isArray(parsed.clarifying_questions)
     ? parsed.clarifying_questions.filter((x) => typeof x === 'string')
     : []
-  const confidence =
-    typeof parsed.confidence === 'number' && Number.isFinite(parsed.confidence)
-      ? parsed.confidence
-      : null
+  const confidence = normalizeConfidence(parsed.confidence)
 
   const linesIn = Array.isArray(parsed.line_items) ? parsed.line_items : []
   const lines = linesIn.map((line) => {
@@ -363,6 +532,9 @@ function applyGuardrail(parsed: ModelDraft, bookById: Map<string, BookItem>) {
         qty,
         unit_price: round2(Number(book.unit_price)),
         overridden: false,
+        // §6.1: where the number came from. Always the book here — the model's
+        // own unit_price was discarded above, whatever it said.
+        unit_price_source: 'price_book' as const,
       }
     }
     // Unknown / null id → needs manual pricing. Discard any model price.
@@ -372,6 +544,7 @@ function applyGuardrail(parsed: ModelDraft, bookById: Map<string, BookItem>) {
       qty,
       unit_price: null as number | null,
       overridden: false,
+      unit_price_source: 'needs_manual_pricing' as const,
     }
   })
 
@@ -431,11 +604,12 @@ Deno.serve(async (req) => {
     const requestId = typeof body.request_id === 'string' ? body.request_id.trim() : ''
     if (!requestId) return json(req, { error: 'request_id is required' }, 400)
 
-    // Optional future: body.image_urls = ["https://…presigned…"] for vision
-    const imageUrls = Array.isArray(body.image_urls)
-      ? body.image_urls.filter((u: unknown) => typeof u === 'string' && u.trim()).map((u: string) => ({
-        url: u.trim(),
-      }))
+    // Explicit override, for testing a specific set of images.
+    const overrideImages = Array.isArray(body.image_urls)
+      ? body.image_urls
+        .filter((u: unknown) => typeof u === 'string' && u.trim())
+        .map((u: string) => ({ url: u.trim() }))
+        .slice(0, 5)
       : []
 
     const { data: requestRow, error: requestError } = await admin
@@ -477,6 +651,24 @@ Deno.serve(async (req) => {
 
     const bookById = new Map(book.map((b) => [b.id, b]))
 
+    // §6.1: request text + voice dictation + up to 5 photos + price book.
+    const photos = overrideImages.length
+      ? {
+        urls: overrideImages,
+        total: overrideImages.length,
+        inlined: 0,
+        via_url: overrideImages.length,
+        note: 'override' as string | undefined,
+      }
+      : await loadRequestPhotos(admin, requestId)
+    const imageUrls = photos.urls
+
+    const audio = await transcribeRequestAudio(admin, requestId)
+    const descriptionForModel = foldDictationIntoDescription(
+      String(requestRow.description ?? ''),
+      audio.text,
+    )
+
     let parsed: ModelDraft
     let raw: unknown
     let modelUsed: string
@@ -490,7 +682,7 @@ Deno.serve(async (req) => {
         zaiTextModel,
         openRouterKey,
         openRouterModel,
-        description: requestRow.description,
+        description: descriptionForModel,
         book,
         images: imageUrls,
       })
@@ -514,10 +706,11 @@ Deno.serve(async (req) => {
       ? guardedLines
       : [{
         price_book_item_id: null as string | null,
-        label: `Needs manual pricing: ${String(requestRow.description).slice(0, 120)}`,
+        label: `Needs manual pricing: ${descriptionForModel.slice(0, 120)}`,
         qty: 1,
         unit_price: null as number | null,
         overridden: false,
+        unit_price_source: 'needs_manual_pricing' as const,
       }]
 
     const { data: settings, error: settingsError } = await admin
@@ -543,6 +736,7 @@ Deno.serve(async (req) => {
     const needsManualPricing = lines.some((l) => l.unit_price == null)
 
     const notesParts = [
+      audio.text ? `Voice dictation (transcribed):\n${audio.text}` : '',
       assumptions.length ? `Assumptions:\n- ${assumptions.join('\n- ')}` : '',
       clarifying_questions.length
         ? `Clarifying questions:\n- ${clarifying_questions.join('\n- ')}`
@@ -600,7 +794,10 @@ Deno.serve(async (req) => {
 
     return json(req, {
       quote_id: quote.id,
-      line_items: insertedLines ?? [],
+      line_items: (insertedLines ?? []).map((l) => ({
+        ...l,
+        unit_price_source: l.price_book_item_id ? 'price_book' : 'needs_manual_pricing',
+      })),
       assumptions,
       clarifying_questions,
       confidence,
@@ -615,6 +812,18 @@ Deno.serve(async (req) => {
       ai_provider: providerUsed,
       ai_fallback: Boolean(fallbackFrom),
       zai_error: zaiError ?? null,
+      // Lets the admin UI say "drafted from 3 photos" — and makes a silent
+      // degrade to text-only visible instead of invisible.
+      photos_used: imageUrls.length,
+      photos_available: photos.total,
+      photos_inlined: photos.inlined,
+      photos_via_url: photos.via_url,
+      photos_note: photos.note ?? null,
+      audio_available: audio.available,
+      audio_transcribed: Boolean(audio.text),
+      audio_transcription: audio.text,
+      audio_stt_provider: audio.provider,
+      audio_note: audio.note,
     })
   } catch {
     return unexpectedError(req)
