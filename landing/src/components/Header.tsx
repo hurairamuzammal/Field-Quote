@@ -138,7 +138,7 @@ export default function Header() {
           aria-label="FieldQuote home — scroll to top"
           onClick={handleLogoClick}
         >
-          <Logo color="var(--text-dark)" size={22} />
+          <Logo color="var(--lime)" size={22} />
         </Link>
 
         <nav className="desktop-nav" aria-label="Primary navigation">

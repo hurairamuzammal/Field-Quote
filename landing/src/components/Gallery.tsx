@@ -28,7 +28,7 @@ export default function Gallery() {
             </h2>
           </div>
           <p className="section-intro">
-            These are FieldQuote screens from the working app: the technician home
+            These are FieldQuote screens from the working app: the admin home
             board, the quote the admin opens, and the job list that closes
             the visit with notes and a photo.
           </p>
@@ -40,13 +40,13 @@ export default function Gallery() {
             {...fadeUp(reducedMotion, 0.08)}
           >
             <Image
-              src="/images/product/admin-quotes.jpg"
-              alt="FieldQuote technician home: next job card, day stats, and the week strip"
+              src="/images/product/admin-home.jpg"
+              alt="FieldQuote admin home: waiting-on-you list, month totals, and the week schedule"
               fill
               sizes="(max-width: 700px) 100vw, 58vw"
               quality={82}
             />
-            <figcaption>Technician home</figcaption>
+            <figcaption>Admin home</figcaption>
           </motion.figure>
 
           <motion.figure className="proof-image" {...fadeUp(reducedMotion, 0.14)}>

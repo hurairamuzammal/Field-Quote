@@ -1,34 +1,69 @@
 'use client';
 
-import { useRef, useState } from 'react';
-import {
-  useMotionValueEvent,
-  useReducedMotion,
-  useScroll,
-} from 'framer-motion';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useReducedMotion } from 'framer-motion';
 import WorkflowVisual from './WorkflowVisual';
 import { WORKFLOW_STEPS } from './workflow-data';
 
 export default function Sequence() {
-  const sectionRef = useRef<HTMLElement>(null);
   const [activeStep, setActiveStep] = useState(0);
   const reducedMotion = Boolean(useReducedMotion());
-  const { scrollYProgress } = useScroll({
-    target: sectionRef,
-    offset: ['start center', 'end center'],
-  });
+  const stepRefs = useRef<Array<HTMLLIElement | null>>([]);
+  const visualRef = useRef<HTMLDivElement>(null);
 
-  useMotionValueEvent(scrollYProgress, 'change', (latest) => {
-    const nextStep = Math.min(
-      WORKFLOW_STEPS.length - 1,
-      Math.max(0, Math.floor(latest * WORKFLOW_STEPS.length)),
-    );
+  /**
+   * The card panel is sticky, so the step it illustrates is whichever step text
+   * sits closest to the panel's own centre — not to the viewport centre, and not
+   * to an even slice of the section's scroll range (the intro block and section
+   * padding live inside that range too).
+   */
+  const syncActiveStep = useCallback(() => {
+    const visual = visualRef.current;
+    const visualRect = visual?.getBoundingClientRect();
+    const anchorY =
+      visualRect && visualRect.height > 0
+        ? visualRect.top + visualRect.height / 2
+        : window.innerHeight / 2;
+
+    let nextStep = 0;
+    let closest = Number.POSITIVE_INFINITY;
+
+    stepRefs.current.forEach((step, index) => {
+      if (!step) return;
+      const rect = step.getBoundingClientRect();
+      const distance = Math.abs(rect.top + rect.height / 2 - anchorY);
+      if (distance < closest) {
+        closest = distance;
+        nextStep = index;
+      }
+    });
+
     setActiveStep((current) => (current === nextStep ? current : nextStep));
-  });
+  }, []);
+
+  useEffect(() => {
+    let frame = 0;
+    const onScroll = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        frame = 0;
+        syncActiveStep();
+      });
+    };
+
+    syncActiveStep();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+
+    return () => {
+      if (frame) window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, [syncActiveStep]);
 
   return (
     <section
-      ref={sectionRef}
       id="how-it-works"
       className="workflow section-pad-lg"
       aria-labelledby="workflow-heading"
@@ -54,6 +89,9 @@ export default function Sequence() {
                 className="workflow-step"
                 data-active={activeStep === index}
                 key={step.number}
+                ref={(node) => {
+                  stepRefs.current[index] = node;
+                }}
               >
                 <div>
                   <span className="workflow-step-number">{step.number}</span>
@@ -66,7 +104,7 @@ export default function Sequence() {
             ))}
           </ol>
 
-          <div className="workflow-visual-wrap">
+          <div className="workflow-visual-wrap" ref={visualRef}>
             <WorkflowVisual
               activeStep={activeStep}
               reducedMotion={reducedMotion}

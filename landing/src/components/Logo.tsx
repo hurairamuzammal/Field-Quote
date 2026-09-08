@@ -2,7 +2,7 @@
  * FieldQuote abstract line logo
  * Geometric lines forming an interconnected FQ tech circuit
  */
-export default function Logo({ color = 'currentColor', size = 28 }: { color?: string; size?: number }) {
+export default function Logo({ color = 'var(--lime)', size = 28 }: { color?: string; size?: number }) {
   return (
     <svg
       width={size * 6.5}
