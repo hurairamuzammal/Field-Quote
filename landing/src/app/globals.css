@@ -40,7 +40,7 @@
   --sheet: #ffffff;
   --sheet-text: #0f1923;
 
-  --text-hero: clamp(3.25rem, 7.4vw, 7.25rem);
+  --text-hero: clamp(3.25rem, min(7.4vw, 9.8vh), 7.25rem);
   --text-h1: clamp(2.8rem, 5vw, 5.4rem);
   --text-h2: clamp(2.35rem, 4vw, 4.4rem);
   --text-h3: clamp(1.45rem, 2.3vw, 2rem);
@@ -686,6 +686,25 @@ main {
 
 .hero-assurance svg {
   color: var(--lime-deep);
+}
+
+/* Wide but short viewports (a maximised 1080p laptop is ~950px of viewport)
+   need the hero's fixed vertical rhythm to give way, or the headline alone
+   fills the screen. Each value keeps its current size as the clamp maximum,
+   so nothing changes on tall displays. Desktop only — below 900px the hero
+   is a single column and these rems are already the right size. */
+@media (min-width: 901px) {
+  .hero {
+    padding: clamp(7.5rem, 13vh, 9.5rem) 0 clamp(3.5rem, 7vh, 6rem);
+  }
+
+  .hero-lede {
+    margin: clamp(1.25rem, 2.4vh, 2rem) 0 clamp(1.5rem, 2.6vh, 2.25rem);
+  }
+
+  .hero-assurance {
+    margin-top: clamp(1.5rem, 2.8vh, 2.4rem);
+  }
 }
 
 .hero-preview {
